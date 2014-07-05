@@ -47,6 +47,18 @@ checkdex() {
 # need their dex entries refreshed.
 dir /sdcard/vrtheme/flags
 
+# Remove placeholder files that will otherwise
+# inhibit proper themeing.
+$bb rm -f /sdcard/vrtheme/data/app/placeholder
+$bb rm -f /sdcard/vrtheme/data/sec_data/placeholder
+$bb rm -f /sdcard/vrtheme/system/app/placeholder
+$bb rm -f /sdcard/vrtheme/system/framework/placeholder
+$bb rm -f /sdcard/vrtheme/preload/symlink/system/app/placeholder
+$bb rm -f /data/app/placeholder
+$bb rm -f /data/sec_data/placeholder
+$bb rm -f /system/app/placeholder
+$bb rm -f /system/framework/placeholder
+
 # Back up original APKs
 ui_print ""
 ui_print "Backing up system apps"
@@ -61,7 +73,7 @@ do
 done
 ui_print "Backups done for system apps"
 
-[ -d /sdcard/vrtheme/preload/symlink/system/app ] && preload=1 || preload=0
+[ -f /sdcard/vrtheme/preload/symlink/system/app/* ] && preload=1 || preload=0
 if [ "$preload" -eq "1" ]; then
 	ui_print "Backing up preload apps"
 	dir /sdcard/vrtheme-backup/preload/symlink/system/app
@@ -76,7 +88,7 @@ if [ "$preload" -eq "1" ]; then
 	ui_print "Backups done for preload apps"
 fi
 
-[ -d /sdcard/vrtheme/system/framework ] && framework=1 || framework=0
+[ -f /sdcard/vrtheme/system/framework/* ] && framework=1 || framework=0
 if [ "$framework" -eq "1" ]; then
 	ui_print "Backing up frameworks"
 	dir /sdcard/vrtheme-backup/system/framework
@@ -91,7 +103,7 @@ if [ "$framework" -eq "1" ]; then
 	ui_print "Backups done for frameworks"
 fi
 
-[ -d /sdcard/vrtheme/data/sec_data ] && datasecapps=1 || datasecapps=0
+[ -f /sdcard/vrtheme/data/sec_data/* ] && datasecapps=1 || datasecapps=0
 if [ "$datasecapps" -eq "1" ]; then
 	ui_print "Backing up sec_data"
 	dir /sdcard/vrtheme-backup/data/sec_data/
@@ -106,7 +118,7 @@ if [ "$datasecapps" -eq "1" ]; then
 	ui_print "Backups done for sec_data"
 fi
 
-[ -d /sdcard/vrtheme/data/app ] && dataapps=1 || dataapps=0
+[ -f /sdcard/vrtheme/data/app/* ] && dataapps=1 || dataapps=0
 if [ "$dataapps" -eq "1" ]; then
 	ui_print "Backing up user apps"
 	dir /sdcard/vrtheme-backup/data/app/
