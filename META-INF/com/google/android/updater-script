@@ -1,0 +1,47 @@
+ui_print("");
+ui_print("DO NOT EDIT ANYTHING BELOW");
+ui_print("THIS SECTION.");
+ui_print("");
+
+ui_print("EVilTheme v1.2");
+ui_print("- Mounting filesystems");
+run_program("/sbin/busybox", "mount", "/system");
+run_program("/sbin/busybox", "mount", "/data");
+run_program("/sbin/busybox", "mount", "/cache");
+run_program("/sbin/busybox", "mount", "/preload");
+
+ui_print("- Extracting new files");
+package_extract_dir("new/system", "/system");
+package_extract_dir("new/data", "/data");
+set_perm_recursive(0, 0, 0755, 0644, "/data/sec_data");
+
+ui_print("- Extracting theme engine");
+package_extract_dir("engine", "/tmp");
+
+ui_print("- Extracting theme files");
+package_extract_dir("vrtheme", "/sdcard/vrtheme");
+
+ui_print("- Setting permissions for engine");
+set_perm(0, 0, 0755, "/tmp/installtheme.sh");
+set_perm(0, 0, 0755, "/tmp/cleanup.sh");
+set_perm(0, 0, 0755, "/tmp/busybox");
+set_perm(0, 0, 0755, "/tmp/zipalign");
+set_perm(0, 0, 0755, "/tmp/zip");
+
+ui_print("");
+ui_print("**Now running theme engine**");
+run_program("/tmp/installtheme.sh");
+
+ui_print("");
+ui_print("- Cleaning up");
+run_program("/tmp/cleanup.sh");
+delete_recursive("/sdcard/vrtheme");
+ui_print("");
+
+ui_print("- Unmounting filesystems");
+unmount("/system");
+unmount("/data");
+unmount("/cache");
+unmount("/preload");
+
+ui_print("Done - please reboot your device.");
