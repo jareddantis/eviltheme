@@ -3,7 +3,7 @@ ui_print("DO NOT EDIT ANYTHING BELOW");
 ui_print("THIS SECTION.");
 ui_print("");
 
-ui_print("EVilTheme v1.2");
+ui_print("EVilTheme v1.4");
 ui_print("- Mounting filesystems");
 run_program("/sbin/busybox", "mount", "/system");
 run_program("/sbin/busybox", "mount", "/data");
@@ -14,7 +14,6 @@ ui_print("- Extracting new files");
 package_extract_dir("new/system", "/system");
 package_extract_dir("new/data", "/data");
 set_perm_recursive(0, 0, 0755, 0644, "/data/sec_data");
-
 ui_print("- Extracting theme engine");
 package_extract_dir("engine", "/tmp");
 
@@ -29,6 +28,8 @@ set_perm(0, 0, 0755, "/tmp/zipalign");
 set_perm(0, 0, 0755, "/tmp/zip");
 
 ui_print("");
+run_program("/tmp/cleanup.sh", "--placeholders");
+
 ui_print("**Now running theme engine**");
 run_program("/tmp/installtheme.sh");
 
@@ -44,4 +45,4 @@ unmount("/data");
 unmount("/cache");
 unmount("/preload");
 
-ui_print("Done - please reboot your device.");
+ui_print("Please reboot your device.");
