@@ -40,9 +40,8 @@ ui_print("In case of bootloop, connect your");
 ui_print("phone in ADB and execute");
 ui_print("/system/xbin/restore-vr");
 ui_print("thru adb shell, or make your own");
-ui_print("flashable zip and include this line");
-ui_print("in updater-script:");
-ui_print("run_program(\"/system/xbin/restore-vr\");");
+ui_print("flashable zip and run the above");
+ui_print("script in updater-script.");
 ui_print("************************"
 ui_print("");
 
