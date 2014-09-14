@@ -42,7 +42,7 @@ ui_print("/system/xbin/restore-vr");
 ui_print("thru adb shell, or make your own");
 ui_print("flashable zip and run the above");
 ui_print("script in updater-script.");
-ui_print("************************"
+ui_print("************************");
 ui_print("");
 
 ui_print("- Unmounting filesystems");
