@@ -3,7 +3,7 @@ ui_print("DO NOT EDIT ANYTHING BELOW");
 ui_print("THIS SECTION.");
 ui_print("");
 
-ui_print("EVilTheme v1.4");
+ui_print("EVilTheme v1.5");
 ui_print("- Mounting filesystems");
 run_program("/sbin/busybox", "mount", "/system");
 run_program("/sbin/busybox", "mount", "/data");
@@ -19,6 +19,8 @@ package_extract_dir("engine", "/tmp");
 
 ui_print("- Extracting theme files");
 package_extract_dir("vrtheme", "/sdcard/vrtheme");
+package_extract_file("restore-vr.sh", "/system/xbin/restore-vr");
+set_perm(0, 0, 0755, "/system/xbin/restore-vr");
 
 ui_print("- Setting permissions for engine");
 set_perm(0, 0, 0755, "/tmp/installtheme.sh");
@@ -27,16 +29,21 @@ set_perm(0, 0, 0755, "/tmp/busybox");
 set_perm(0, 0, 0755, "/tmp/zipalign");
 set_perm(0, 0, 0755, "/tmp/zip");
 
-ui_print("");
-run_program("/tmp/cleanup.sh", "--placeholders");
-
-ui_print("**Now running theme engine**");
 run_program("/tmp/installtheme.sh");
 
-ui_print("");
 ui_print("- Cleaning up");
 run_program("/tmp/cleanup.sh");
-delete_recursive("/sdcard/vrtheme");
+
+ui_print("");
+ui_print("************************");
+ui_print("In case of bootloop, connect your");
+ui_print("phone in ADB and execute");
+ui_print("/system/xbin/restore-vr");
+ui_print("thru adb shell, or make your own");
+ui_print("flashable zip and include this line");
+ui_print("in updater-script:");
+ui_print("run_program(\"/system/xbin/restore-vr\");");
+ui_print("************************"
 ui_print("");
 
 ui_print("- Unmounting filesystems");
