@@ -15,14 +15,15 @@ OUTFD=$(ps | grep -v "grep" | grep -o -E "update_binary(.*)" | cut -d " " -f 3);
 [ $OUTFD != "" ] || OUTFD=$(ps | grep -v "grep" | grep -o -E "updater(.*)" | cut -d " " -f 3);
 
 # Declare location shortcuts
-f1=/sdcard/vrtheme/system/app
-f2=/sdcard/vrtheme/preload/system/app
-f3=/sdcard/vrtheme/system/framework
-f4=/sdcard/vrtheme/data/sec_app
-f5=/sdcard/vrtheme/apply/system/app
-f6=/sdcard/vrtheme/apply/preload/system/app
-f7=/sdcard/vrtheme/apply/system/framework
-f8=/sdcard/vrtheme/apply/data/sec_app
+vrroot=/sdcard/vrtheme
+f1=$vrroot/system/app
+f2=$vrroot/preload/system/app
+f3=$vrroot/system/framework
+f4=$vrroot/data/sec_app
+f5=$vrroot/apply/system/app
+f6=$vrroot/apply/preload/system/app
+f7=$vrroot/apply/system/framework
+f8=$vrroot/apply/data/sec_app
 
 # Define some methods
 ui_print() {
@@ -42,25 +43,25 @@ zpln() {
 	/tmp/zipalign -f -v 4 $1 ./aligned/$1
 }
 
-zip() {
-	/tmp/zip -r $1 $2
+theme() {
+	/tmp/zip -r -q $1 $2
 }
 
 checkdex() {
 	if [ -f ./classes.dex ]; then
-		echo "# This is a flag for cleanup.sh" > /sdcard/vrtheme/flags/$1
-		echo "# to delete this app's dex entry" >> /sdcard/vrtheme/flags/$1
+		echo "# This is a flag for cleanup.sh" > $vrroot/flags/$1
+		echo "# to delete this app's dex entry" >> $vrroot/flags/$1
 	fi
 }
 
 # cleanup.sh will look here to see what apps need their dex entries refreshed.
-dir /sdcard/vrtheme/flags
+dir $vrroot/flags
 
 # Remove placeholder files that will otherwise inhibit proper themeing.
-$bb rm -f /sdcard/vrtheme/data/sec_data/placeholder
-$bb rm -f /sdcard/vrtheme/system/app/placeholder
-$bb rm -f /sdcard/vrtheme/system/framework/placeholder
-$bb rm -f /sdcard/vrtheme/preload/symlink/system/app/placeholder
+$bb rm -f $vrroot/data/sec_data/placeholder
+$bb rm -f $vrroot/system/app/placeholder
+$bb rm -f $vrroot/system/framework/placeholder
+$bb rm -f $vrroot/preload/symlink/system/app/placeholder
 $bb rm -f /data/sec_data/placeholder
 $bb rm -f /data/app/placeholder
 $bb rm -f /system/app/placeholder
@@ -68,55 +69,55 @@ $bb rm -f /system/framework/placeholder
 
 # Back up original APKs
 ui_print "- Backing up apps"
-[ -f /sdcard/vrtheme/preload/symlink/system/app/* ] && sysapps=1 || sysapps=0
+[ -f $vrroot/preload/symlink/system/app/* ] && sysapps=1 || sysapps=0
 if [ $sysapps == "1" ]; then
-	dir /sdcard/vrtheme/backup/system/app
-	dir /sdcard/vrtheme/apply/system/app
+	dir $vrroot/backup/system/app
+	dir $vrroot/apply/system/app
 	for f in $(ls $f1)
 	do
 	  ui_print " - $f"
-	  cp /system/app/$f /sdcard/vrtheme/apply/system/app/
-	  cp /system/app/$f /sdcard/vrtheme/backup/system/app/
+	  cp /system/app/$f $vrroot/apply/system/app/
+	  cp /system/app/$f $vrroot/backup/system/app/
 	done
 	ui_print ""
 fi
 
-[ -f /sdcard/vrtheme/preload/symlink/system/app/* ] && preload=1 || preload=0
+[ -f $vrroot/preload/symlink/system/app/* ] && preload=1 || preload=0
 if [ $preload == "1" ]; then
 	ui_print "- Backing up preload apps"
-	dir /sdcard/vrtheme-backup/preload/symlink/system/app
-	dir /sdcard/vrtheme/apply/preload/symlink/system/app
+	dir $vrroot-backup/preload/symlink/system/app
+	dir $vrroot/apply/preload/symlink/system/app
 	for f in $(ls $f2)
 	do
 		ui_print " - $f"
-		cp /preload/symlink/system/app/$f /sdcard/vrtheme/apply/preload/symlink/system/app/
-		cp /preload/symlink/system/app/$f /sdcard/vrtheme-backup/preload/symlink/system/app/
+		cp /preload/symlink/system/app/$f $vrroot/apply/preload/symlink/system/app/
+		cp /preload/symlink/system/app/$f $vrroot-backup/preload/symlink/system/app/
 	done
 	ui_print "Backups done for preload apps"
 	ui_print ""
 fi
 
-[ -f /sdcard/vrtheme/system/framework/* ] && framework=1 || framework=0
+[ -f $vrroot/system/framework/* ] && framework=1 || framework=0
 if [ $framework == "1" ]; then
-	dir /sdcard/vrtheme-backup/system/framework
-	dir /sdcard/vrtheme/apply/system/framework
+	dir $vrroot-backup/system/framework
+	dir $vrroot/apply/system/framework
 	for f in $(ls $f3)
 	do
 		ui_print " - $f"
-		cp /system/framework/$f /sdcard/vrtheme/apply/system/framework/
-		cp /system/framework/$f /sdcard/vrtheme-backup/system/framework/
+		cp /system/framework/$f $vrroot/apply/system/framework/
+		cp /system/framework/$f $vrroot-backup/system/framework/
 	done
 fi
 
-[ -f /sdcard/vrtheme/data/sec_data/* ] && datasecapps=1 || datasecapps=0
+[ -f $vrroot/data/sec_data/* ] && datasecapps=1 || datasecapps=0
 if [ $datasecapps == "1" ]; then
-	dir /sdcard/vrtheme-backup/data/sec_data/
-	dir /sdcard/vrtheme/apply/data/sec_data/
+	dir $vrroot-backup/data/sec_data/
+	dir $vrroot/apply/data/sec_data/
 	for f in $(ls $f4)
 	do
 		ui_print " - $f"
-		cp /data/sec_data/$f /sdcard/vrtheme/apply/data/sec_data/
-		cp /data/sec_data/$f /sdcard/vrtheme-backup/data/sec_data/
+		cp /data/sec_data/$f $vrroot/apply/data/sec_data/
+		cp /data/sec_data/$f $vrroot-backup/data/sec_data/
 	done
 fi
 
@@ -124,53 +125,49 @@ fi
 ui_print "- Themeing apps"
 
 if [ $sysapps == "1" ]; then
-	cd /sdcard/vrtheme/apply/system/app/
+	cd $vrroot/apply/system/app/
 	for f in $(ls $f1)
 	do
 	  ui_print "* $f"
-	  cd /sdcard/vrtheme/system/app/$f/
-	  mv /sdcard/vrtheme/apply/system/app/$f /sdcard/vrtheme/apply/system/app/$f.zip
-	  zip /sdcard/vrtheme/apply/system/app/$f.zip *
-	  mv /sdcard/vrtheme/apply/system/app/$f.zip /sdcard/vrtheme/apply/system/app/$f
+	  mv $vrroot/apply/system/app/$f $vrroot/apply/system/app/$f.zip
+	  theme $vrroot/apply/system/app/$f.zip $vrroot/system/app/$f
+	  mv $vrroot/apply/system/app/$f.zip $vrroot/apply/system/app/$f
 	  checkdex $f
 	done
 fi
 
 if [ $preload == "1" ]; then
-	cd /sdcard/vrtheme/apply/preload/symlink/system/app/
+	cd $vrroot/apply/preload/symlink/system/app/
 	for f in $(ls $f2)
 	do
 	  ui_print " - $f"
-	  cd /sdcard/vrtheme/preload/symlinkl/system/app/$f/
-	  mv /sdcard/vrtheme/apply/preload/symlink/system/app/$f /sdcard/vrtheme/apply/preload/symlink/system/app/$f.zip
-	  zip /sdcard/vrtheme/apply/preload/symlink/system/app/$f.zip *
-	  mv /sdcard/vrtheme/apply/preload/symlink/system/app/$f.zip /sdcard/vrtheme/apply/preload/symlink/system/app/$f
+	  mv $vrroot/apply/preload/symlink/system/app/$f $vrroot/apply/preload/symlink/system/app/$f.zip
+	  theme $vrroot/apply/preload/symlink/system/app/$f.zip $vrroot/preload/symlink/system/app/$f
+	  mv $vrroot/apply/preload/symlink/system/app/$f.zip $vrroot/apply/preload/symlink/system/app/$f
 	  checkdex $f
 	done
 fi
 
 if [ $framework == "1" ]; then
-	cd /sdcard/vrtheme/apply/system/framework/
+	cd $vrroot/apply/system/framework/
 	for f in $(ls $f3)
 	do
 	  ui_print " - $f"
-	  cd /sdcard/vrtheme/system/framework/$f/
-	  mv /sdcard/vrtheme/apply/system/framework/$f /sdcard/vrtheme/apply/system/framework/$f.zip
-	  zip /sdcard/vrtheme/apply/system/framework/$f.zip *
-	  mv /sdcard/vrtheme/apply/system/framework/$f.zip /sdcard/vrtheme/apply/system/framework/$f
+	  mv $vrroot/apply/system/framework/$f $vrroot/apply/system/framework/$f.zip
+	  theme $vrroot/apply/system/framework/$f.zip $vrroot/system/framework/$f
+	  mv $vrroot/apply/system/framework/$f.zip $vrroot/apply/system/framework/$f
 	  checkdex $f
 	done
 fi
 
 if [ $datasecapps == "1" ]; then
-	cd /sdcard/vrtheme/apply/data/sec_data/
+	cd $vrroot/apply/data/sec_data/
 	for f in $(ls $f4)
 	do
 	  ui_print " - $f"
-	  cd /sdcard/vrtheme/data/sec_data/$f/
-	  mv /sdcard/vrtheme/apply/data/sec_data/$f /sdcard/vrtheme/apply/data/sec_data/$f.zip
-	  zip /sdcard/vrtheme/apply/data/sec_data/$f.zip *
-	  mv /sdcard/vrtheme/apply/data/sec_data/$f.zip /sdcard/vrtheme/apply/data/sec_data/$f
+	  mv $vrroot/apply/data/sec_data/$f $vrroot/apply/data/sec_data/$f.zip
+	  theme $vrroot/apply/data/sec_data/$f.zip $vrroot/data/sec_data/$f
+	  mv $vrroot/apply/data/sec_data/$f.zip $vrroot/apply/data/sec_data/$f
 	  checkdex $f
 	done
 fi
@@ -178,7 +175,7 @@ fi
 # Zipalign all the APKs
 ui_print "- Zipaligning themed apps"
 if [ $sysapps == "1" ]; then
-	cd /sdcard/vrtheme/apply/system/app/
+	cd $vrroot/apply/system/app/
 	$bb mkdir aligned
 	for f in $(ls $f5/*.apk)
 	do
@@ -187,7 +184,7 @@ if [ $sysapps == "1" ]; then
 fi
 
 if [ $preload == "1" ]; then
-	cd /sdcard/vrtheme/apply/preload/symlink/system/app/
+	cd $vrroot/apply/preload/symlink/system/app/
 	$bb mkdir aligned
 	for f in $(ls $f6/*.apk)
 	do
@@ -196,7 +193,7 @@ if [ $preload == "1" ]; then
 fi
 
 if [ $framework == "1" ]; then
-	cd /sdcard/vrtheme/apply/system/framework/
+	cd $vrroot/apply/system/framework/
 	$bb mkdir aligned
 	for f in $(ls $f7/*.apk)
 	do
@@ -205,7 +202,7 @@ if [ $framework == "1" ]; then
 fi
 
 if [ $datasecapps == "1" ]; then
-	cd /sdcard/vrtheme/apply/data/sec_data/
+	cd $vrroot/apply/data/sec_data/
 	$bb mkdir aligned
 	for f in $(ls $f8/*.apk)
 	do
@@ -215,25 +212,25 @@ fi
 
 # Move each new app back to its original location
 if [ $sysapps == "1" ]; then
-	cd /sdcard/vrtheme/apply/system/app/aligned/
+	cd $vrroot/apply/system/app/aligned/
 	cp * /system/app/
 	chmod 644 /system/app/*
 fi
 
 if [ $preload == "1" ]; then
-	cd /sdcard/vrtheme/apply/preload/symlink/system/app/aligned/
+	cd $vrroot/apply/preload/symlink/system/app/aligned/
 	cp * /preload/symlink/system/app/
 	chmod 644 /preload/symlink/system/app/*
 fi
 
 if [ $framework == "1" ]; then
-	cd /sdcard/vrtheme/apply/system/framework/aligned/
+	cd $vrroot/apply/system/framework/aligned/
 	cp * /system/framework
 	chmod 644 /system/framework/*
 fi
 
 if [ $datasecapps == "1" ]; then
-	cd /sdcard/vrtheme/apply/data/sec_data/aligned/
+	cd $vrroot/apply/data/sec_data/aligned/
 	cp * /data/sec_data/
 	chmod 644 /data/sec_data/*
 fi
