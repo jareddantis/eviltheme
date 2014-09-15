@@ -19,6 +19,10 @@ f1=/sdcard/vrtheme/system/app
 f2=/sdcard/vrtheme/preload/system/app
 f3=/sdcard/vrtheme/system/framework
 f4=/sdcard/vrtheme/data/sec_app
+f5=/sdcard/vrtheme/apply/system/app
+f6=/sdcard/vrtheme/apply/preload/system/app
+f7=/sdcard/vrtheme/apply/system/framework
+f8=/sdcard/vrtheme/apply/data/sec_app
 
 # Define some methods
 ui_print() {
@@ -176,7 +180,7 @@ ui_print "- Zipaligning themed apps"
 if [ $sysapps == "1" ]; then
 	cd /sdcard/vrtheme/apply/system/app/
 	$bb mkdir aligned
-	for f in $(ls *.apk)
+	for f in $(ls $f5/*.apk)
 	do
 	  zpln $f
 	done
@@ -185,7 +189,7 @@ fi
 if [ $preload == "1" ]; then
 	cd /sdcard/vrtheme/apply/preload/symlink/system/app/
 	$bb mkdir aligned
-	for f in $(ls *.apk)
+	for f in $(ls $f6/*.apk)
 	do
 	  zpln $f
 	done
@@ -194,7 +198,7 @@ fi
 if [ $framework == "1" ]; then
 	cd /sdcard/vrtheme/apply/system/framework/
 	$bb mkdir aligned
-	for f in $(ls *.apk)
+	for f in $(ls $f7/*.apk)
 	do
 	  zpln $f
 	done
@@ -203,7 +207,7 @@ fi
 if [ $datasecapps == "1" ]; then
 	cd /sdcard/vrtheme/apply/data/sec_data/
 	$bb mkdir aligned
-	for f in $(ls *.apk)
+	for f in $(ls $f8/*.apk)
 	do
 	  zpln $f
 	done
