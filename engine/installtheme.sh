@@ -125,48 +125,48 @@ fi
 ui_print "- Themeing apps"
 
 if [ $sysapps == "1" ]; then
-	cd $vrroot/apply/system/app/
-	for f in $(ls $f1)
+	cd $vrroot/system/app/
+	for f in $(ls $f5)
 	do
 	  ui_print "* $f"
 	  mv $vrroot/apply/system/app/$f $vrroot/apply/system/app/$f.zip
-	  theme $vrroot/apply/system/app/$f.zip $vrroot/system/app/$f
+	  theme $vrroot/apply/system/app/$f.zip *
 	  mv $vrroot/apply/system/app/$f.zip $vrroot/apply/system/app/$f
 	  checkdex $f
 	done
 fi
 
 if [ $preload == "1" ]; then
-	cd $vrroot/apply/preload/symlink/system/app/
-	for f in $(ls $f2)
+	cd $vrroot/preload/symlink/system/app/
+	for f in $(ls $f6)
 	do
 	  ui_print " - $f"
 	  mv $vrroot/apply/preload/symlink/system/app/$f $vrroot/apply/preload/symlink/system/app/$f.zip
-	  theme $vrroot/apply/preload/symlink/system/app/$f.zip $vrroot/preload/symlink/system/app/$f
+	  theme $vrroot/apply/preload/symlink/system/app/$f.zip *
 	  mv $vrroot/apply/preload/symlink/system/app/$f.zip $vrroot/apply/preload/symlink/system/app/$f
 	  checkdex $f
 	done
 fi
 
 if [ $framework == "1" ]; then
-	cd $vrroot/apply/system/framework/
-	for f in $(ls $f3)
+	cd $vrroot/system/framework/
+	for f in $(ls $f7)
 	do
 	  ui_print " - $f"
 	  mv $vrroot/apply/system/framework/$f $vrroot/apply/system/framework/$f.zip
-	  theme $vrroot/apply/system/framework/$f.zip $vrroot/system/framework/$f
+	  theme $vrroot/apply/system/framework/$f.zip *
 	  mv $vrroot/apply/system/framework/$f.zip $vrroot/apply/system/framework/$f
 	  checkdex $f
 	done
 fi
 
 if [ $datasecapps == "1" ]; then
-	cd $vrroot/apply/data/sec_data/
-	for f in $(ls $f4)
+	cd $vrroot/data/sec_data/
+	for f in $(ls $f8)
 	do
 	  ui_print " - $f"
 	  mv $vrroot/apply/data/sec_data/$f $vrroot/apply/data/sec_data/$f.zip
-	  theme $vrroot/apply/data/sec_data/$f.zip $vrroot/data/sec_data/$f
+	  theme $vrroot/apply/data/sec_data/$f.zip *
 	  mv $vrroot/apply/data/sec_data/$f.zip $vrroot/apply/data/sec_data/$f
 	  checkdex $f
 	done
