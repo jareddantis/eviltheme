@@ -17,10 +17,12 @@ OUTFD=$(ps | grep -v "grep" | grep -o -E "update_binary(.*)" | cut -d " " -f 3);
 # Declare location shortcuts
 vrroot=/sdcard/vrtheme
 f1=$vrroot/system/app
+f1_1=$vrroot/system/priv-app
 f2=$vrroot/preload/system/app
 f3=$vrroot/system/framework
 f4=$vrroot/data/sec_app
 f5=$vrroot/apply/system/app
+f5priv=$vrroot/apply/system/priv-app
 f6=$vrroot/apply/preload/system/app
 f7=$vrroot/apply/system/framework
 f8=$vrroot/apply/data/sec_app
@@ -60,16 +62,18 @@ dir $vrroot/flags
 # Remove placeholder files that will otherwise inhibit proper themeing.
 $bb rm -f $vrroot/data/sec_data/placeholder
 $bb rm -f $vrroot/system/app/placeholder
+$bb rm -f $vrroot/system/priv-app/placeholder
 $bb rm -f $vrroot/system/framework/placeholder
 $bb rm -f $vrroot/preload/symlink/system/app/placeholder
 $bb rm -f /data/sec_data/placeholder
 $bb rm -f /data/app/placeholder
 $bb rm -f /system/app/placeholder
+$bb rm -f /system/priv-app/placeholder
 $bb rm -f /system/framework/placeholder
 
 # Back up original APKs
 ui_print "- Backing up apps"
-[ -f $vrroot/preload/symlink/system/app/* ] && sysapps=1 || sysapps=0
+[ -f $vrroot/system/app/* ] && sysapps=1 || sysapps=0
 if [ $sysapps == "1" ]; then
 	dir $vrroot/backup/system/app
 	dir $vrroot/apply/system/app
@@ -82,16 +86,29 @@ if [ $sysapps == "1" ]; then
 	ui_print ""
 fi
 
+[ -f $vrroot/system/priv-app/* ] && privapps=1 || privapps=0
+if [ $privapps == "1" ]; then
+	dir $vrroot/backup/system/priv-app
+	dir $vrroot/apply/system/priv-app
+	for f in $(ls $f1)
+	do
+	  ui_print " - $f"
+	  cp /system/priv-app/$f $vrroot/apply/system/priv-app/
+	  cp /system/priv-app/$f $vrroot/backup/system/priv-app/
+	done
+	ui_print ""
+fi
+
 [ -f $vrroot/preload/symlink/system/app/* ] && preload=1 || preload=0
 if [ $preload == "1" ]; then
 	ui_print "- Backing up preload apps"
-	dir $vrroot-backup/preload/symlink/system/app
+	dir $vrroot/backup/preload/symlink/system/app
 	dir $vrroot/apply/preload/symlink/system/app
 	for f in $(ls $f2)
 	do
 		ui_print " - $f"
 		cp /preload/symlink/system/app/$f $vrroot/apply/preload/symlink/system/app/
-		cp /preload/symlink/system/app/$f $vrroot-backup/preload/symlink/system/app/
+		cp /preload/symlink/system/app/$f $vrroot/backup/preload/symlink/system/app/
 	done
 	ui_print "Backups done for preload apps"
 	ui_print ""
@@ -99,25 +116,25 @@ fi
 
 [ -f $vrroot/system/framework/* ] && framework=1 || framework=0
 if [ $framework == "1" ]; then
-	dir $vrroot-backup/system/framework
+	dir $vrroot/backup/system/framework
 	dir $vrroot/apply/system/framework
 	for f in $(ls $f3)
 	do
 		ui_print " - $f"
 		cp /system/framework/$f $vrroot/apply/system/framework/
-		cp /system/framework/$f $vrroot-backup/system/framework/
+		cp /system/framework/$f $vrroot/backup/system/framework/
 	done
 fi
 
 [ -f $vrroot/data/sec_data/* ] && datasecapps=1 || datasecapps=0
 if [ $datasecapps == "1" ]; then
-	dir $vrroot-backup/data/sec_data/
+	dir $vrroot/backup/data/sec_data/
 	dir $vrroot/apply/data/sec_data/
 	for f in $(ls $f4)
 	do
 		ui_print " - $f"
 		cp /data/sec_data/$f $vrroot/apply/data/sec_data/
-		cp /data/sec_data/$f $vrroot-backup/data/sec_data/
+		cp /data/sec_data/$f $vrroot/backup/data/sec_data/
 	done
 fi
 
@@ -132,6 +149,18 @@ if [ $sysapps == "1" ]; then
 	  mv $vrroot/apply/system/app/$f $vrroot/apply/system/app/$f.zip
 	  theme $vrroot/apply/system/app/$f.zip *
 	  mv $vrroot/apply/system/app/$f.zip $vrroot/apply/system/app/$f
+	  checkdex $f
+	done
+fi
+
+if [ $privapps == "1" ]; then
+	cd $vrroot/system/priv-app/
+	for f in $(ls $f5priv)
+	do
+	  ui_print "* $f"
+	  mv $vrroot/apply/system/priv-app/$f $vrroot/apply/system/priv-app/$f.zip
+	  theme $vrroot/apply/system/priv-app/$f.zip *
+	  mv $vrroot/apply/system/priv-app/$f.zip $vrroot/apply/system/priv-app/$f
 	  checkdex $f
 	done
 fi
@@ -183,6 +212,15 @@ if [ $sysapps == "1" ]; then
 	done
 fi
 
+if [ $privapps == "1" ]; then
+	cd $vrroot/apply/system/priv-app/
+	$bb mkdir aligned
+	for f in $(ls $f5priv/*.apk)
+	do
+	  zpln $f
+	done
+fi
+
 if [ $preload == "1" ]; then
 	cd $vrroot/apply/preload/symlink/system/app/
 	$bb mkdir aligned
@@ -215,6 +253,12 @@ if [ $sysapps == "1" ]; then
 	cd $vrroot/apply/system/app/aligned/
 	cp * /system/app/
 	chmod 644 /system/app/*
+fi
+
+if [ $privapps == "1" ]; then
+	cd $vrroot/apply/system/priv-app/aligned/
+	cp * /system/priv-app/
+	chmod 644 /system/priv-app/*
 fi
 
 if [ $preload == "1" ]; then

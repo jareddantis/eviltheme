@@ -55,7 +55,7 @@ done
 
 # Finally we remove the vrtheme folder, but retain the backups. I mean, why do
 # a backup if we're just going to delete the backup afterwards?
-$bb mv /sdcard/vrtheme-backup /sdcard/vrtheme_backup
+$bb mv /sdcard/vrtheme/backup /sdcard/vrtheme_backup
 $deldir /sdcard/vrtheme
 
 exit 0
