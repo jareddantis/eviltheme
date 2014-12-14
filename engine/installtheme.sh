@@ -14,6 +14,19 @@ OUTFD=$(ps | grep -v "grep" | grep -o -E "update_binary(.*)" | cut -d " " -f 3);
 
 [ $OUTFD != "" ] || OUTFD=$(ps | grep -v "grep" | grep -o -E "updater(.*)" | cut -d " " -f 3);
 
+# Check if ROM is Lollipop+ or not
+apiLevel=$(getprop ro.build.version.sdk)
+if [[ $apiLevel >= "21" ]]; then
+	ui_print "- Adjusting engine for Lollipop ROM"
+	appName() {
+		echo "$(echo $1 | $bb sed -e 's/\.apk//g')/$1"
+	}
+else
+	appName() {
+		echo "$1"
+	}
+fi
+
 # Declare location shortcuts
 vrroot=/sdcard/vrtheme
 f1=$vrroot/system/app
@@ -60,16 +73,17 @@ checkdex() {
 dir $vrroot/flags
 
 # Remove placeholder files that will otherwise inhibit proper themeing.
-$bb rm -f $vrroot/data/sec_data/placeholder
-$bb rm -f $vrroot/system/app/placeholder
-$bb rm -f $vrroot/system/priv-app/placeholder
-$bb rm -f $vrroot/system/framework/placeholder
-$bb rm -f $vrroot/preload/symlink/system/app/placeholder
-$bb rm -f /data/sec_data/placeholder
-$bb rm -f /data/app/placeholder
-$bb rm -f /system/app/placeholder
-$bb rm -f /system/priv-app/placeholder
-$bb rm -f /system/framework/placeholder
+locations="data/sec_data system/app system/priv-app system/framework preload/symlink/system/app data/app"
+for folder in $locations; do
+	cd /$folder
+	for dummyFile in $($bb find . | grep 'placeholder'); do
+		rm $dummyFile
+	done
+	cd $vrroot/$folder
+	for dummyFile in $($bb find . | grep 'placeholder'); do
+		rm $dummyFile
+	done
+done
 
 # Back up original APKs
 ui_print "- Backing up apps"
@@ -77,11 +91,10 @@ ui_print "- Backing up apps"
 if [ $sysapps == "1" ]; then
 	dir $vrroot/backup/system/app
 	dir $vrroot/apply/system/app
-	for f in $(ls $f1)
-	do
+	for f in $(ls $f1); do
 	  ui_print " - $f"
-	  cp /system/app/$f $vrroot/apply/system/app/
-	  cp /system/app/$f $vrroot/backup/system/app/
+	  cp /system/app/$(appName $f) $vrroot/apply/system/app/
+	  cp /system/app/$(appName $f) $vrroot/backup/system/app/
 	done
 	ui_print ""
 fi
@@ -90,11 +103,10 @@ fi
 if [ $privapps == "1" ]; then
 	dir $vrroot/backup/system/priv-app
 	dir $vrroot/apply/system/priv-app
-	for f in $(ls $f1)
-	do
+	for f in $(ls $f1); do
 	  ui_print " - $f"
-	  cp /system/priv-app/$f $vrroot/apply/system/priv-app/
-	  cp /system/priv-app/$f $vrroot/backup/system/priv-app/
+	  cp /system/priv-app/$(appName $f) $vrroot/apply/system/priv-app/
+	  cp /system/priv-app/$(appName $f) $vrroot/backup/system/priv-app/
 	done
 	ui_print ""
 fi
@@ -104,8 +116,7 @@ if [ $preload == "1" ]; then
 	ui_print "- Backing up preload apps"
 	dir $vrroot/backup/preload/symlink/system/app
 	dir $vrroot/apply/preload/symlink/system/app
-	for f in $(ls $f2)
-	do
+	for f in $(ls $f2); do
 		ui_print " - $f"
 		cp /preload/symlink/system/app/$f $vrroot/apply/preload/symlink/system/app/
 		cp /preload/symlink/system/app/$f $vrroot/backup/preload/symlink/system/app/
@@ -118,8 +129,7 @@ fi
 if [ $framework == "1" ]; then
 	dir $vrroot/backup/system/framework
 	dir $vrroot/apply/system/framework
-	for f in $(ls $f3)
-	do
+	for f in $(ls $f3); do
 		ui_print " - $f"
 		cp /system/framework/$f $vrroot/apply/system/framework/
 		cp /system/framework/$f $vrroot/backup/system/framework/
@@ -130,8 +140,7 @@ fi
 if [ $datasecapps == "1" ]; then
 	dir $vrroot/backup/data/sec_data/
 	dir $vrroot/apply/data/sec_data/
-	for f in $(ls $f4)
-	do
+	for f in $(ls $f4); do
 		ui_print " - $f"
 		cp /data/sec_data/$f $vrroot/apply/data/sec_data/
 		cp /data/sec_data/$f $vrroot/backup/data/sec_data/
@@ -155,8 +164,7 @@ fi
 
 if [ $privapps == "1" ]; then
 	cd $vrroot/system/priv-app/
-	for f in $(ls $f5priv)
-	do
+	for f in $(ls $f5priv); do
 	  ui_print "* $f"
 	  mv $vrroot/apply/system/priv-app/$f $vrroot/apply/system/priv-app/$f.zip
 	  theme $vrroot/apply/system/priv-app/$f.zip *
@@ -167,8 +175,7 @@ fi
 
 if [ $preload == "1" ]; then
 	cd $vrroot/preload/symlink/system/app/
-	for f in $(ls $f6)
-	do
+	for f in $(ls $f6); do
 	  ui_print " - $f"
 	  mv $vrroot/apply/preload/symlink/system/app/$f $vrroot/apply/preload/symlink/system/app/$f.zip
 	  theme $vrroot/apply/preload/symlink/system/app/$f.zip *
@@ -179,8 +186,7 @@ fi
 
 if [ $framework == "1" ]; then
 	cd $vrroot/system/framework/
-	for f in $(ls $f7)
-	do
+	for f in $(ls $f7); do
 	  ui_print " - $f"
 	  mv $vrroot/apply/system/framework/$f $vrroot/apply/system/framework/$f.zip
 	  theme $vrroot/apply/system/framework/$f.zip *
@@ -191,8 +197,7 @@ fi
 
 if [ $datasecapps == "1" ]; then
 	cd $vrroot/data/sec_data/
-	for f in $(ls $f8)
-	do
+	for f in $(ls $f8); do
 	  ui_print " - $f"
 	  mv $vrroot/apply/data/sec_data/$f $vrroot/apply/data/sec_data/$f.zip
 	  theme $vrroot/apply/data/sec_data/$f.zip *
@@ -206,8 +211,7 @@ ui_print "- Zipaligning themed apps"
 if [ $sysapps == "1" ]; then
 	cd $vrroot/apply/system/app/
 	$bb mkdir aligned
-	for f in $(ls $f5/*.apk)
-	do
+	for f in $(ls $f5/*.apk); do
 	  zpln $f
 	done
 fi
@@ -215,8 +219,7 @@ fi
 if [ $privapps == "1" ]; then
 	cd $vrroot/apply/system/priv-app/
 	$bb mkdir aligned
-	for f in $(ls $f5priv/*.apk)
-	do
+	for f in $(ls $f5priv/*.apk); do
 	  zpln $f
 	done
 fi
@@ -224,8 +227,7 @@ fi
 if [ $preload == "1" ]; then
 	cd $vrroot/apply/preload/symlink/system/app/
 	$bb mkdir aligned
-	for f in $(ls $f6/*.apk)
-	do
+	for f in $(ls $f6/*.apk); do
 	  zpln $f
 	done
 fi
@@ -233,8 +235,7 @@ fi
 if [ $framework == "1" ]; then
 	cd $vrroot/apply/system/framework/
 	$bb mkdir aligned
-	for f in $(ls $f7/*.apk)
-	do
+	for f in $(ls $f7/*.apk); do
 	  zpln $f
 	done
 fi
@@ -242,8 +243,7 @@ fi
 if [ $datasecapps == "1" ]; then
 	cd $vrroot/apply/data/sec_data/
 	$bb mkdir aligned
-	for f in $(ls $f8/*.apk)
-	do
+	for f in $(ls $f8/*.apk); do
 	  zpln $f
 	done
 fi
