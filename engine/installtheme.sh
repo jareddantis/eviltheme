@@ -17,9 +17,13 @@ OUTFD=$(ps | grep -v "grep" | grep -o -E "update_binary(.*)" | cut -d " " -f 3);
 # Check if ROM is Lollipop+ or not
 apiLevel=$(getprop ro.build.version.sdk)
 if [[ $apiLevel >= "21" ]]; then
+	lollipop=1
 	ui_print "- Adjusting engine for Lollipop ROM"
 	appName() {
 		echo "$(echo $1 | $bb sed -e 's/\.apk//g')/$1"
+	}
+	appFolder() {
+		echo "$(echo $1 | $bb sed -e 's/\.apk//g')"
 	}
 else
 	appName() {
@@ -73,7 +77,7 @@ checkdex() {
 dir $vrroot/flags
 
 # Remove placeholder files that will otherwise inhibit proper themeing.
-locations="data/sec_data system/app system/priv-app system/framework preload/symlink/system/app data/app"
+locations=(data/sec_data system/app system/priv-app system/framework preload/symlink/system/app data/app)
 for folder in $locations; do
 	cd /$folder
 	for dummyFile in $($bb find . | grep 'placeholder'); do
@@ -103,7 +107,7 @@ fi
 if [ $privapps == "1" ]; then
 	dir $vrroot/backup/system/priv-app
 	dir $vrroot/apply/system/priv-app
-	for f in $(ls $f1); do
+	for f in $(ls $f1_1); do
 	  ui_print " - $f"
 	  cp /system/priv-app/$(appName $f) $vrroot/apply/system/priv-app/
 	  cp /system/priv-app/$(appName $f) $vrroot/backup/system/priv-app/
@@ -118,8 +122,8 @@ if [ $preload == "1" ]; then
 	dir $vrroot/apply/preload/symlink/system/app
 	for f in $(ls $f2); do
 		ui_print " - $f"
-		cp /preload/symlink/system/app/$f $vrroot/apply/preload/symlink/system/app/
-		cp /preload/symlink/system/app/$f $vrroot/backup/preload/symlink/system/app/
+		cp /preload/symlink/system/app/$(appName $f) $vrroot/apply/preload/symlink/system/app/
+		cp /preload/symlink/system/app/$(appName $f) $vrroot/backup/preload/symlink/system/app/
 	done
 	ui_print "Backups done for preload apps"
 	ui_print ""
@@ -251,32 +255,50 @@ fi
 # Move each new app back to its original location
 if [ $sysapps == "1" ]; then
 	cd $vrroot/apply/system/app/aligned/
-	cp * /system/app/
-	chmod 644 /system/app/*
+	if [[ $lollipop == "1" ]]; then
+		for f in $(ls $f5/aligned/*.apk); do
+			cp $f /system/app/$(appFolder $f)/
+		done
+	else
+		cp * /system/app/
+	fi
+	chmod -R 644 /system/app/*
 fi
 
 if [ $privapps == "1" ]; then
 	cd $vrroot/apply/system/priv-app/aligned/
-	cp * /system/priv-app/
-	chmod 644 /system/priv-app/*
+	if [[ $lollipop == "1" ]]; then
+		for f in $(ls $f5-priv/aligned/*.apk); do
+			cp $f /system/priv-app/$(appFolder $f)/
+		done
+	else
+		cp * /system/priv-app/
+	fi
+	chmod -R 644 /system/priv-app/*
 fi
 
 if [ $preload == "1" ]; then
 	cd $vrroot/apply/preload/symlink/system/app/aligned/
-	cp * /preload/symlink/system/app/
-	chmod 644 /preload/symlink/system/app/*
+	if [[ $lollipop == "1" ]]; then
+		for f in $(ls $f6/aligned/*.apk); do
+			cp $f /preload/symlink/system/app/$(appFolder $f)/
+		done
+	else
+		cp * /preload/symlink/system/app/
+	fi
+	chmod -R 644 /preload/symlink/system/app/*
 fi
 
 if [ $framework == "1" ]; then
 	cd $vrroot/apply/system/framework/aligned/
 	cp * /system/framework
-	chmod 644 /system/framework/*
+	chmod -R 644 /system/framework/*
 fi
 
 if [ $datasecapps == "1" ]; then
 	cd $vrroot/apply/data/sec_data/aligned/
 	cp * /data/sec_data/
-	chmod 644 /data/sec_data/*
+	chmod -R 644 /data/sec_data/*
 fi
 
 exit 0
