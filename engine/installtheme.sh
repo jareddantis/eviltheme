@@ -10,12 +10,12 @@
 
 # Define some methods
 ui_print() {
-  if [ $OUTFD != "" ]; then
-    echo "ui_print ${1} " 1>&$OUTFD;
-    echo "ui_print " 1>&$OUTFD;
-  else
-    echo "${1}";
-  fi;
+	if [ $OUTFD != "" ]; then
+		echo "ui_print ${1} " 1>&$OUTFD;
+		echo "ui_print " 1>&$OUTFD;
+	else
+		echo "${1}";
+	fi;
 }
 
 dir() {
@@ -31,7 +31,7 @@ theme() {
 }
 
 checkdex() {
-	if [ -f ./classes.dex ]; then
+	if [ -e ./classes.dex ]; then
 		echo "# This is a flag for cleanup.sh" > $vrroot/flags/$1
 		echo "# to delete this app's dex entry" >> $vrroot/flags/$1
 	fi
@@ -91,36 +91,39 @@ done
 
 # Back up original APKs
 ui_print "- Backing up apps"
-[ -f $vrroot/system/app/* ] && sysapps=1 || sysapps=0
+[ -e $vrroot/system/app/* ] && sysapps=1 || sysapps=0
 if [ $sysapps -eq "1" ]; then
 	dir $vrroot/backup/system/app
 	dir $vrroot/apply/system/app
-	for f in $(ls $f1); do
-	  ui_print " - $f"
-	  cp /system/app/"$(appName $f)" $vrroot/apply/system/app/
-	  cp /system/app/"$(appName $f)" $vrroot/backup/system/app/
+	for f in $f1/*.apk; do
+		[ -e $f ] || break
+		ui_print " - $f"
+		cp /system/app/"$(appName $f)" $vrroot/apply/system/app/
+		cp /system/app/"$(appName $f)" $vrroot/backup/system/app/
 	done
 	ui_print ""
 fi
 
-[ -f $vrroot/system/priv-app/* ] && privapps=1 || privapps=0
+[ -e $vrroot/system/priv-app/* ] && privapps=1 || privapps=0
 if [ $privapps -eq "1" ]; then
 	dir $vrroot/backup/system/priv-app
 	dir $vrroot/apply/system/priv-app
-	for f in $(ls $f1_1); do
-	  ui_print " - $f"
-	  cp /system/priv-app/"$(appName $f)" $vrroot/apply/system/priv-app/
-	  cp /system/priv-app/"$(appName $f)" $vrroot/backup/system/priv-app/
+	for f in $f1_1/*.apk; do
+		[ -e $f ] || break
+		ui_print " - $f"
+		cp /system/priv-app/"$(appName $f)" $vrroot/apply/system/priv-app/
+		cp /system/priv-app/"$(appName $f)" $vrroot/backup/system/priv-app/
 	done
 	ui_print ""
 fi
 
-[ -f $vrroot/preload/symlink/system/app/* ] && preload=1 || preload=0
+[ -e $vrroot/preload/symlink/system/app/* ] && preload=1 || preload=0
 if [ $preload -eq "1" ]; then
 	ui_print "- Backing up preload apps"
 	dir $vrroot/backup/preload/symlink/system/app
 	dir $vrroot/apply/preload/symlink/system/app
-	for f in $(ls $f2); do
+	for f in $f2/*.apk; do
+		[ -e $f ] || break
 		ui_print " - $f"
 		cp /preload/symlink/system/app/"$(appName $f)" $vrroot/apply/preload/symlink/system/app/
 		cp /preload/symlink/system/app/"$(appName $f)" $vrroot/backup/preload/symlink/system/app/
@@ -129,22 +132,24 @@ if [ $preload -eq "1" ]; then
 	ui_print ""
 fi
 
-[ -f $vrroot/system/framework/* ] && framework=1 || framework=0
+[ -e $vrroot/system/framework/* ] && framework=1 || framework=0
 if [ $framework -eq "1" ]; then
 	dir $vrroot/backup/system/framework
 	dir $vrroot/apply/system/framework
-	for f in $(ls $f3); do
+	for f in $f3/*.apk; do
+		[ -e $f ] || break
 		ui_print " - $f"
 		cp /system/framework/$f $vrroot/apply/system/framework/
 		cp /system/framework/$f $vrroot/backup/system/framework/
 	done
 fi
 
-[ -f $vrroot/data/sec_data/* ] && datasecapps=1 || datasecapps=0
+[ -e $vrroot/data/sec_data/* ] && datasecapps=1 || datasecapps=0
 if [ $datasecapps -eq "1" ]; then
 	dir $vrroot/backup/data/sec_data/
 	dir $vrroot/apply/data/sec_data/
-	for f in $(ls $f4); do
+	for f in $f4/*.apk; do
+		[ -e $f ] || break
 		ui_print " - $f"
 		cp /data/sec_data/$f $vrroot/apply/data/sec_data/
 		cp /data/sec_data/$f $vrroot/backup/data/sec_data/
@@ -156,57 +161,61 @@ ui_print "- Themeing apps"
 
 if [ $sysapps -eq "1" ]; then
 	cd $vrroot/system/app/
-	for f in $(ls $f5)
-	do
-	  ui_print "* $f"
-	  mv $vrroot/apply/system/app/$f $vrroot/apply/system/app/$f.zip
-	  theme $vrroot/apply/system/app/$f.zip *
-	  mv $vrroot/apply/system/app/$f.zip $vrroot/apply/system/app/$f
-	  checkdex $f
+	for f in $f5/*.apk; do
+		[ -e $f ] || break
+		ui_print "* $f"
+		mv $vrroot/apply/system/app/$f $vrroot/apply/system/app/$f.zip
+		theme $vrroot/apply/system/app/$f.zip *
+		mv $vrroot/apply/system/app/$f.zip $vrroot/apply/system/app/$f
+		checkdex $f
 	done
 fi
 
 if [ $privapps -eq "1" ]; then
 	cd $vrroot/system/priv-app/
-	for f in $(ls $f5priv); do
-	  ui_print "* $f"
-	  mv $vrroot/apply/system/priv-app/$f $vrroot/apply/system/priv-app/$f.zip
-	  theme $vrroot/apply/system/priv-app/$f.zip *
-	  mv $vrroot/apply/system/priv-app/$f.zip $vrroot/apply/system/priv-app/$f
-	  checkdex $f
+	for f in $f5priv/*.apk; do
+		[ -e $f ] || break
+		ui_print "* $f"
+		mv $vrroot/apply/system/priv-app/$f $vrroot/apply/system/priv-app/$f.zip
+		theme $vrroot/apply/system/priv-app/$f.zip *
+		mv $vrroot/apply/system/priv-app/$f.zip $vrroot/apply/system/priv-app/$f
+		checkdex $f
 	done
 fi
 
 if [ $preload -eq "1" ]; then
 	cd $vrroot/preload/symlink/system/app/
-	for f in $(ls $f6); do
-	  ui_print " - $f"
-	  mv $vrroot/apply/preload/symlink/system/app/$f $vrroot/apply/preload/symlink/system/app/$f.zip
-	  theme $vrroot/apply/preload/symlink/system/app/$f.zip *
-	  mv $vrroot/apply/preload/symlink/system/app/$f.zip $vrroot/apply/preload/symlink/system/app/$f
-	  checkdex $f
+	for f in $f6/*.apk; do
+		[ -e $f ] || break
+		ui_print " - $f"
+		mv $vrroot/apply/preload/symlink/system/app/$f $vrroot/apply/preload/symlink/system/app/$f.zip
+		theme $vrroot/apply/preload/symlink/system/app/$f.zip *
+		mv $vrroot/apply/preload/symlink/system/app/$f.zip $vrroot/apply/preload/symlink/system/app/$f
+		checkdex $f
 	done
 fi
 
 if [ $framework -eq "1" ]; then
 	cd $vrroot/system/framework/
-	for f in $(ls $f7); do
-	  ui_print " - $f"
-	  mv $vrroot/apply/system/framework/$f $vrroot/apply/system/framework/$f.zip
-	  theme $vrroot/apply/system/framework/$f.zip *
-	  mv $vrroot/apply/system/framework/$f.zip $vrroot/apply/system/framework/$f
-	  checkdex $f
+	for f in $f7/*.apk; do
+		[ -e $f ] || break
+		ui_print " - $f"
+		mv $vrroot/apply/system/framework/$f $vrroot/apply/system/framework/$f.zip
+		theme $vrroot/apply/system/framework/$f.zip *
+		mv $vrroot/apply/system/framework/$f.zip $vrroot/apply/system/framework/$f
+		checkdex $f
 	done
 fi
 
 if [ $datasecapps -eq "1" ]; then
 	cd $vrroot/data/sec_data/
-	for f in $(ls $f8); do
-	  ui_print " - $f"
-	  mv $vrroot/apply/data/sec_data/$f $vrroot/apply/data/sec_data/$f.zip
-	  theme $vrroot/apply/data/sec_data/$f.zip *
-	  mv $vrroot/apply/data/sec_data/$f.zip $vrroot/apply/data/sec_data/$f
-	  checkdex $f
+	for f in $f8/*.apk; do
+		[ -e $f ] || break
+		ui_print " - $f"
+		mv $vrroot/apply/data/sec_data/$f $vrroot/apply/data/sec_data/$f.zip
+		theme $vrroot/apply/data/sec_data/$f.zip *
+		mv $vrroot/apply/data/sec_data/$f.zip $vrroot/apply/data/sec_data/$f
+		checkdex $f
 	done
 fi
 
@@ -215,49 +224,55 @@ ui_print "- Zipaligning themed apps"
 if [ $sysapps -eq "1" ]; then
 	cd $vrroot/apply/system/app/
 	$bb mkdir aligned
-	for f in $(ls $f5/*.apk); do
-	  zpln $f
+	for f in $f5/*.apk; do
+		[ -e $f ] || break
+		zpln $f
 	done
 fi
 
 if [ $privapps -eq "1" ]; then
 	cd $vrroot/apply/system/priv-app/
 	$bb mkdir aligned
-	for f in $(ls $f5priv/*.apk); do
-	  zpln $f
+	for f in $f5priv/*.apk; do
+		[ -e $f ] || break
+		zpln $f
 	done
 fi
 
 if [ $preload -eq "1" ]; then
 	cd $vrroot/apply/preload/symlink/system/app/
 	$bb mkdir aligned
-	for f in $(ls $f6/*.apk); do
-	  zpln $f
+	for f in $f6/*.apk; do
+		[ -e $f ] || break
+		zpln $f
 	done
 fi
 
 if [ $framework -eq "1" ]; then
 	cd $vrroot/apply/system/framework/
 	$bb mkdir aligned
-	for f in $(ls $f7/*.apk); do
-	  zpln $f
+	for f in $f7/*.apk; do
+		[ -e $f ] || break
+		zpln $f
 	done
 fi
 
 if [ $datasecapps -eq "1" ]; then
 	cd $vrroot/apply/data/sec_data/
 	$bb mkdir aligned
-	for f in $(ls $f8/*.apk); do
-	  zpln $f
+	for f in $f8/*.apk; do
+		[ -e $f ] || break
+		zpln $f
 	done
 fi
 
 # Move each new app back to its original location
 if [ $sysapps -eq "1" ]; then
 	cd $vrroot/apply/system/app/aligned/
-	if [[ $lollipop -eq "1" ]]; then
-		for f in $(ls $f5/aligned/*.apk); do
-			cp $f /system/app/$(appFolder $f)/
+	if [ $lollipop -eq "1" ]; then
+		for f in $f5/aligned/*.apk; do
+			[ -e $f ] || break
+			cp $f /system/app/"$(appFolder $f)"/
 		done
 	else
 		cp * /system/app/
@@ -267,9 +282,10 @@ fi
 
 if [ $privapps -eq "1" ]; then
 	cd $vrroot/apply/system/priv-app/aligned/
-	if [[ $lollipop -eq "1" ]]; then
-		for f in $(ls $f5-priv/aligned/*.apk); do
-			cp $f /system/priv-app/$(appFolder $f)/
+	if [ $lollipop -eq "1" ]; then
+		for f in $f5-priv/aligned/*.apk; do
+			[ -e $f ] || break
+			cp $f /system/priv-app/"$(appFolder $f)"/
 		done
 	else
 		cp * /system/priv-app/
@@ -279,9 +295,10 @@ fi
 
 if [ $preload -eq "1" ]; then
 	cd $vrroot/apply/preload/symlink/system/app/aligned/
-	if [[ $lollipop -eq "1" ]]; then
-		for f in $(ls $f6/aligned/*.apk); do
-			cp $f /preload/symlink/system/app/$(appFolder $f)/
+	if [ $lollipop -eq "1" ]; then
+		for f in $f6/aligned/*.apk; do
+			[ -e $f ] || break
+			cp $f /preload/symlink/system/app/"$(appFolder $f)"/
 		done
 	else
 		cp * /preload/symlink/system/app/
