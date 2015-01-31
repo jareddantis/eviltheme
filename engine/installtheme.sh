@@ -76,19 +76,6 @@ f8=$vrroot/apply/data/sec_app
 # cleanup.sh will look here to see what apps need their dex entries refreshed.
 dir $vrroot/flags
 
-# Remove placeholder files that will otherwise inhibit proper themeing.
-locations=(data/sec_data system/app system/priv-app system/framework preload/symlink/system/app data/app)
-for folder in ${locations[@]}; do
-	cd /$folder
-	for dummyFile in $($bb find . | grep 'placeholder'); do
-		rm $dummyFile
-	done
-	cd $vrroot/$folder
-	for dummyFile in $($bb find . | grep 'placeholder'); do
-		rm $dummyFile
-	done
-done
-
 # Back up original APKs
 ui_print "- Backing up apps"
 [ -e $vrroot/system/app/* ] && sysapps=1 || sysapps=0
