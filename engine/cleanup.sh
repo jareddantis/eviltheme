@@ -47,8 +47,8 @@ ui_print() {
 # This is more efficient than deleting the whole cache, which will make boot time longer as Android
 # will have to optimize all APKs present.
 cd /sdcard/vrtheme/flags
-for f in $(ls /sdcard/vrtheme/flags/*.apk)
-do
+for f in /sdcard/vrtheme/flags/*.apk; do
+	[ -e $f ] || break
 	ui_print " - $f"
 	clrdex $f
 done
