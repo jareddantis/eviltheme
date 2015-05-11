@@ -190,7 +190,7 @@ cd $vrbackup
 dir /data/eviltheme-backup
 mv /data/tmp/eviltheme/vrtheme_restore.zip /data/tmp/eviltheme/restore-$datetime.zip
 theme /data/tmp/eviltheme/restore-$datetime.zip *
-mv /data/tmp/eviltheme/restore-$datetime.zip /data/eviltheme-backup
+mv /data/tmp/eviltheme/restore-$datetime.zip /data/eviltheme-backup/restore-$datetime.zip
 
 # Cleanup
 
