@@ -1,7 +1,7 @@
 #!/sbin/sh
 
-# Enhanced VRTheme engine v1.5
-# Copyright Aurel Jared Dantis, 2014.
+# Enhanced VRTheme engine v2.0
+# Copyright Aurel Jared Dantis, 2014-2015.
 #
 # Original VRTheme engine is copyright
 # VillainROM 2011. All rights reserved.
