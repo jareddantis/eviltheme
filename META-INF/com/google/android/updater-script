@@ -1,4 +1,4 @@
-ui_print("EVilTheme Engine 2.0.1");
+ui_print("EVilTheme Engine 2.0.2");
 ui_print("- Mounting filesystems");
 run_program("/sbin/busybox", "mount", "/system");
 run_program("/sbin/busybox", "mount", "/data");
