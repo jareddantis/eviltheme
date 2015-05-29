@@ -29,10 +29,10 @@ if [ ! "$lpfiletree" ]; then
 else
 	checkdex() {
 		if [ -e ./classes.dex ]; then
-			if [ -e "/data/dalvik-cache/system@$1@$tmpvar@$2.apk@classes.dex" ]; then
-				rm -f "/data/dalvik-cache/system@$1@$tmpvar@$2.apk@classes.dex"
+			if [ -e "/data/dalvik-cache/system@$1@$2@classes.dex" ]; then
+				rm -f "/data/dalvik-cache/system@$1@$2@classes.dex"
 			else
-				rm -f "/cache/dalvik-cache/system@$1@$tmpvar@$2.apk@classes.dex"
+				rm -f "/cache/dalvik-cache/system@$1@$2@classes.dex"
 			fi
 		fi
 	}
@@ -48,7 +48,9 @@ ui_print() {
 	fi;
 }
 dir() {
-	$bb mkdir -p "$1"
+	if [ ! -d "$1" ]; then
+		$bb mkdir -p "$1"
+	fi
 }
 zpln() {
 	if [ "$lollipop" -eq "1" ]; then
@@ -59,6 +61,10 @@ zpln() {
 }
 theme() {
 	/tmp/zip -r -q "$1" . -i "$2"
+}
+friendlyname() {
+	tempvar="$(echo $1 | $bb sed 's/.apk//g')"
+	echo "$tempvar"
 }
 
 # Declare location shortcuts
@@ -80,20 +86,24 @@ if [ "$sysapps" -eq "1" ]; then
 	dir aligned
 
 	for f in *.apk; do
+		cd "$f"
+
 		# Backup APK
 		if [ "$lollipop" -eq "1" ]; then
-			dir "$vrbackup/system/app/$f"
-			dir "$vrroot/apply/system/app/$f"
-			cp "/system/app/$f/$f.apk" "$vrbackup/system/app/$f/"
-			cp "/system/app/$f/$f.apk" "$vrroot/apply/system/app/$f/"
-			appPath="$f/$f.apk"
+			appPath="$(friendlyname $f)/$f"
+			dir "$vrbackup/system/app/$(friendlyname $f)"
+			dir "$vrroot/apply/system/app/$(friendlyname $f)"
+			cp "/system/app/$appPath" "$vrbackup/system/app/$(friendlyname $f)/"
+			cp "/system/app/$appPath" "$vrroot/apply/system/app/$(friendlyname $f)/"
 		else
+			dir "$vrbackup/system/app/"
+			dir "$vrroot/apply/system/app/"
 			cp "/system/app/$f" "$vrbackup/system/app/"
 			cp "/system/app/$f" "$vrroot/apply/system/app/"
 			appPath="$f"
 		fi
 
-		ui_print "* $appPath"
+		ui_print "  * $appPath"
 
 		# Theme APK
 		mv "$vrroot/apply/system/app/$appPath" "$vrroot/apply/system/app/$appPath.zip"
@@ -102,12 +112,14 @@ if [ "$sysapps" -eq "1" ]; then
 
 		# Refresh bytecode if necessary
 		checkdex "app" "$f"
+		cd ../
 
 		# Zipalign APK
 		zpln "$appPath"
 
 		# Replace old APK
-		cp "aligned/$appPath" /system/app/
+		$bb cp -f "aligned/$appPath" "/system/app/$appPath"
+
 	done
 fi
 if [ "$privapps" -eq "1" ]; then
@@ -115,20 +127,24 @@ if [ "$privapps" -eq "1" ]; then
 	dir aligned
 
 	for f in *.apk; do
+		cd "$f"
+
 		# Backup APK
 		if [ "$lollipop" -eq "1" ]; then
-			dir "$vrbackup/system/priv-app/$f"
-			dir "$vrroot/apply/system/priv-app/$f"
-			cp "/system/priv-app/$f/$f.apk" "$vrbackup/system/priv-app/$f/"
-			cp "/system/priv-app/$f/$f.apk" "$vrroot/apply/system/priv-app/$f/"
-			appPath="$f/$f.apk"
+			appPath="$(friendlyname $f)/$f"
+			dir "$vrbackup/system/priv-app/$(friendlyname $f)"
+			dir "$vrroot/apply/system/priv-app/$(friendlyname $f)"
+			cp "/system/priv-app/$appPath" "$vrbackup/system/priv-app/$(friendlyname $f)/"
+			cp "/system/priv-app/$appPath" "$vrroot/apply/system/priv-app/$(friendlyname $f)/"
 		else
+			dir "$vrbackup/system/priv-app/"
+			dir "$vrroot/apply/system/priv-app/"
 			cp "/system/priv-app/$f" "$vrbackup/system/priv-app/"
 			cp "/system/priv-app/$f" "$vrroot/apply/system/priv-app/"
 			appPath="$f"
 		fi
 
-		ui_print "* $appPath"
+		ui_print "  * $appPath"
 
 		# Theme APK
 		mv "$vrroot/apply/system/priv-app/$appPath" "$vrroot/apply/system/priv-app/$appPath.zip"
@@ -136,26 +152,31 @@ if [ "$privapps" -eq "1" ]; then
 		mv "$vrroot/apply/system/priv-app/$appPath.zip" "$vrroot/apply/system/priv-app/$appPath"
 
 		# Refresh bytecode if necessary
-		checkdex "app" "$f"
+		checkdex "priv-app" "$f"
+		cd ../
 
 		# Zipalign APK
 		zpln "$appPath"
 
 		# Replace old APK
-		cp "aligned/$appPath" /system/priv-app/
+		$bb cp -f "aligned/$appPath" "/system/priv-app/$appPath"
 	done
 fi
 
 if [ "$framework" -eq "1" ]; then
 	cd "$vrroot/system/framework/"
 	dir aligned
+	dir "$vrbackup/system/framework/"
+	dir "$vrroot/apply/system/framework/"
 
 	for f in *.apk; do
+		cd "$f"
+
 		# Backup APK
 		cp "/system/framework/$f" "$vrbackup/system/framework/"
 		cp "/system/framework/$f" "$vrroot/apply/system/framework/"
 
-		ui_print "* $f"
+		ui_print "  * $f"
 
 		# Theme APK
 		mv "$vrroot/apply/system/framework/$f" "$vrroot/apply/system/framework/$f.zip"
@@ -164,12 +185,13 @@ if [ "$framework" -eq "1" ]; then
 
 		# Refresh bytecode if necessary
 		checkdex "framework" "$f"
+		cd ../
 
 		# Zipalign APK
 		zpln "$f"
 
 		# Replace old APK
-		cp "aligned/$f" /system/framework/
+		$bb cp -f "aligned/$f" /system/framework/
 	done
 fi
 
