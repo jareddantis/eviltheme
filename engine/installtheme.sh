@@ -1,6 +1,6 @@
 #!/sbin/sh
 
-# Enhanced VRTheme engine v2.0.2
+# Enhanced VRTheme engine v2.0.3
 # Copyright Aurel Jared Dantis, 2014-2015.
 #
 # Original VRTheme engine is copyright
