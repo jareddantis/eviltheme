@@ -59,13 +59,13 @@ zpln() {
 	fi
 	/tmp/zipalign -f -v 4 $1 ./aligned/$1
 }
-theme() {
-	/tmp/zip -r -q "$1" . -i "$2"
-}
 friendlyname() {
 	tempvar="$(echo $1 | $bb sed 's/.apk//g')"
 	echo "$tempvar"
 }
+
+# I don't think functions work well for this purpose
+theme="/tmp/zip -r"
 
 # Declare location shortcuts
 vrroot="/data/tmp/eviltheme"
@@ -107,7 +107,7 @@ if [ "$sysapps" -eq "1" ]; then
 
 		# Theme APK
 		mv "$vrroot/apply/system/app/$appPath" "$vrroot/apply/system/app/$appPath.zip"
-		theme "$vrroot/apply/system/app/$appPath.zip" ./*
+		$theme "$vrroot/apply/system/app/$appPath.zip" ./*
 		mv "$vrroot/apply/system/app/$appPath.zip" "$vrroot/apply/system/app/$appPath"
 
 		# Refresh bytecode if necessary
@@ -148,7 +148,7 @@ if [ "$privapps" -eq "1" ]; then
 
 		# Theme APK
 		mv "$vrroot/apply/system/priv-app/$appPath" "$vrroot/apply/system/priv-app/$appPath.zip"
-		theme "$vrroot/apply/system/priv-app/$appPath.zip" ./*
+		$theme "$vrroot/apply/system/priv-app/$appPath.zip" ./*
 		mv "$vrroot/apply/system/priv-app/$appPath.zip" "$vrroot/apply/system/priv-app/$appPath"
 
 		# Refresh bytecode if necessary
@@ -180,7 +180,7 @@ if [ "$framework" -eq "1" ]; then
 
 		# Theme APK
 		mv "$vrroot/apply/system/framework/$f" "$vrroot/apply/system/framework/$f.zip"
-		theme "$vrroot/apply/system/framework/$f.zip" ./*
+		$theme "$vrroot/apply/system/framework/$f.zip" ./*
 		mv "$vrroot/apply/system/framework/$f.zip" "$vrroot/apply/system/framework/$f"
 
 		# Refresh bytecode if necessary
@@ -200,7 +200,7 @@ ui_print "- Creating restore zip in /data/eviltheme-backup"
 cd "$vrbackup"
 dir /data/eviltheme-backup
 mv /data/tmp/eviltheme/vrtheme_restore.zip "/data/tmp/eviltheme/restore-$datetime.zip"
-theme "/data/tmp/eviltheme/restore-$datetime.zip" ./*
+$theme "/data/tmp/eviltheme/restore-$datetime.zip" ./*
 mv "/data/tmp/eviltheme/restore-$datetime.zip" "/data/eviltheme-backup/restore-$datetime.zip"
 
 # Cleanup
