@@ -258,6 +258,7 @@ $theme "/data/eviltheme-backup/restore-$datetime.zip" ./*
 # Cleanup
 ui_print "- Cleaning up"
 $bb rm -fR /data/tmp/eviltheme
+$bb rm -fR /data/tmp/evt-backup
 ui_print "Done. If your device does not perform properly after this,"
 ui_print "just flash /data/eviltheme-backup/restore-$datetime.zip."
 
