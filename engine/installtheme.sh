@@ -1,6 +1,7 @@
 #!/sbin/sh
+evtVersion="2.0.5"
 
-# Enhanced VRTheme engine v2.0.4
+# Enhanced VRTheme engine
 # Copyright aureljared@XDA, 2014-2015.
 #
 # Original VRTheme engine is copyright
@@ -10,20 +11,42 @@
 #
 # Portions are copyright Spannaa@XDA 2015.
 
-# Declare busybox and output file descriptor
+# Declare busybox, output file descriptor, timecapture, and logging mechanism
 bb="/tmp/busybox"
 datetime=$($bb date +"%m%d%y-%H%M%S")
 OUTFD=$(ps | grep -v "grep" | grep -o -E "update_binary(.*)" | cut -d " " -f 3);
 [ $OUTFD != "" ] || OUTFD=$(ps | grep -v "grep" | grep -o -E "updater(.*)" | cut -d " " -f 3);
 
-# Check if ROM is Lollipop+ or not
+# Welcome!
+evtlog() {
+	# Append to our own log file
+	if [ -d /data/eviltheme-backup ]; then
+		logfile="/data/eviltheme-backup/evt_$datetime.log"
+	else
+		logfile="/data/tmp/eviltheme/evt_$datetime.log"
+	fi
+	if [ ! -e "$logfile" ]
+		$bb touch $logfile
+		chmod 0644 $logfile
+	fi
+	if [ "$1" == "loglocation" ]; then
+		echo "$logfile"
+		return
+	fi
+	echo "$@" >> "$logfile"
+}
+evtlog "I: This is EVilTheme version $evtVersion."
+
+# ROM checks
 getpropval() {
-	acquiredValue=`cat $1 | grep "^$2=" | cut -d"=" -f2 | tr -d '\r '`
+	acquiredValue=`cat /system/build.prop | grep "^$2=" | cut -d"=" -f2 | tr -d '\r '`
 	echo "$acquiredValue"
 }
-platformString=`getpropval /system/build.prop "ro.build.version.release"`
+platformString=`getpropval "ro.build.version.release"`
 platform=`echo "$platformString" | cut -d. -f1`
+evtlog "I: Device is a `getpropval "ro.product.brand"` `getpropval "ro.product.model"`, running Android $platformString."
 if [ "$platform" -ge "5" ]; then
+	evtlog "I: Dalvik platform 2.0+ detected [$platformString]."
 	lollipop="1"
 	ui_print "- Adjusting engine for new app hierarchy"
 	friendlyname() {
@@ -34,12 +57,15 @@ if [ "$platform" -ge "5" ]; then
 	checkdex() {
 		tmpvar=$(friendlyname "$2")
 		if [ -e ./classes.dex ]; then
+			evtlog "P: Replacement bytecode for $1 $2.apk present. Deleting old Dalvik entry."
 			rm -f "/data/dalvik-cache/arm/system@$1@$tmpvar@$2.apk@classes.dex"
 		fi
 	}
 else
+	evtlog "I: Legacy Dalvik platform detected [$platformString]."
 	checkdex() {
 		if [ -e ./classes.dex ]; then
+			evtlog "P: Replacement bytecode for $1 $2 present. Deleting old Dalvik entry."
 			if [ -e "/data/dalvik-cache/system@$1@$2@classes.dex" ]; then
 				rm -f "/data/dalvik-cache/system@$1@$2@classes.dex"
 			else
@@ -74,9 +100,6 @@ zpln() {
 	/tmp/zipalign -f 4 "$1" ./aligned/$1
 }
 
-# I don't think functions work well for this purpose
-theme="/tmp/zip -r"
-
 # Work directories
 vrroot="/data/tmp/eviltheme"
 vrbackup="/data/tmp/evt-backup"
@@ -89,9 +112,11 @@ ui_print "- Theming apps"
 [ -d "$vrroot/system/priv-app" ] && privapps=1 || privapps=0
 [ -d "$vrroot/system/framework" ] && framework=1 || framework=0
 [ -d "$vrroot/preload/symlink/system/app" ] && preload=1 || preload=0
+evtlog "I: Preliminary operations complete. Starting theme process."
 
 # /system/app
 if [ "$sysapps" -eq "1" ]; then
+	evtlog "P: System app theme files present."
 	cd "$vrroot/system/app/"
 	dir "$vrbackup/system/app"
 	dir "$vrroot/apply/system/app"
@@ -100,6 +125,7 @@ if [ "$sysapps" -eq "1" ]; then
 	for f in *.apk; do
 		cd "$f"
 		ui_print "  sa: $f"
+		evtlog "P: Processing system app $f."
 
 		# Backup APK
 		if [ "$lollipop" -eq "1" ]; then
@@ -116,7 +142,7 @@ if [ "$sysapps" -eq "1" ]; then
 
 		# Theme APK
 		mv "$vrroot/apply/system/app/$appPath" "$vrroot/apply/system/app/$appPath.zip"
-		$theme "$vrroot/apply/system/app/$appPath.zip" ./*
+		/tmp/zip -r "$vrroot/apply/system/app/$appPath.zip" ./* >> $(evtlog loglocation)
 		mv "$vrroot/apply/system/app/$appPath.zip" "$vrroot/apply/system/app/$appPath"
 
 		# Refresh bytecode if necessary
@@ -135,6 +161,7 @@ fi
 
 # /preload/symlink/system/app
 if [ "$preload" -eq "1" ]; then
+	evtlog "P: System preload theme files present."
 	cd "$vrroot/preload/symlink/system/app/"
 	dir "$vrbackup/preload/symlink/system/app/"
 	dir "$vrroot/apply/preload/symlink/system/app"
@@ -143,6 +170,7 @@ if [ "$preload" -eq "1" ]; then
 	for f in *.apk; do
 		cd "$f"
 		ui_print "  pr: $f"
+		evtlog "P: Processing preload app $f"
 
 		# Backup APK
 		cp "/preload/symlink/system/app/$f" "$vrbackup/preload/symlink/system/app/"
@@ -150,7 +178,7 @@ if [ "$preload" -eq "1" ]; then
 
 		# Theme APK
 		mv "$vrroot/apply/preload/symlink/system/app/$f" "$vrroot/apply/preload/symlink/system/app/$f.zip"
-		$theme "$vrroot/apply/preload/symlink/system/app/$f.zip" ./*
+		/tmp/zip -r "$vrroot/apply/preload/symlink/system/app/$f.zip" ./* >> $(evtlog loglocation)
 		mv "$vrroot/apply/preload/symlink/system/app/$f.zip" "$vrroot/apply/preload/symlink/system/app/$f"
 
 		# Refresh bytecode if necessary
@@ -171,6 +199,7 @@ fi
 
 # /system/priv-app
 if [ "$privapps" -eq "1" ]; then
+	evtlog "P: System priv-app theme files present."
 	cd "$vrroot/system/priv-app/"
 	dir "$vrbackup/system/priv-app"
 	dir "$vrroot/apply/system/priv-app"
@@ -179,6 +208,7 @@ if [ "$privapps" -eq "1" ]; then
 	for f in *.apk; do
 		cd "$f"
 		ui_print "  sp: $f"
+		evtlog "P: Processing priv-app $f."
 
 		# Backup APK
 		if [ "$lollipop" -eq "1" ]; then
@@ -195,7 +225,7 @@ if [ "$privapps" -eq "1" ]; then
 
 		# Theme APK
 		mv "$vrroot/apply/system/priv-app/$appPath" "$vrroot/apply/system/priv-app/$appPath.zip"
-		$theme "$vrroot/apply/system/priv-app/$appPath.zip" ./*
+		/tmp/zip -r "$vrroot/apply/system/priv-app/$appPath.zip" ./* >> $(evtlog loglocation)
 		mv "$vrroot/apply/system/priv-app/$appPath.zip" "$vrroot/apply/system/priv-app/$appPath"
 
 		# Refresh bytecode if necessary
@@ -215,6 +245,7 @@ fi
 
 # /system/framework
 if [ "$framework" -eq "1" ]; then
+	evtlog "P: Framework theme files present."
 	cd "$vrroot/system/framework/"
 	dir "$vrbackup/system/framework"
 	dir "$vrroot/apply/system/framework"
@@ -223,6 +254,7 @@ if [ "$framework" -eq "1" ]; then
 	for f in *.apk; do
 		cd "$f"
 		ui_print "  fw: $f"
+		evtlog "P: Processing framework app $f."
 
 		# Backup APK
 		cp "/system/framework/$f" "$vrbackup/system/framework/"
@@ -230,7 +262,7 @@ if [ "$framework" -eq "1" ]; then
 
 		# Theme APK
 		mv "$vrroot/apply/system/framework/$f" "$vrroot/apply/system/framework/$f.zip"
-		$theme "$vrroot/apply/system/framework/$f.zip" ./*
+		/tmp/zip -r "$vrroot/apply/system/framework/$f.zip" ./* >> $(evtlog loglocation)
 		mv "$vrroot/apply/system/framework/$f.zip" "$vrroot/apply/system/framework/$f"
 
 		# Refresh bytecode if necessary
@@ -250,10 +282,12 @@ fi
 
 # Create flashable restore zip
 ui_print "- Creating restore zip in /data/eviltheme-backup"
+evtlog "I: Theme process complete. Creating restore zip [$datetime]."
 cd "$vrbackup"
 dir "/data/eviltheme-backup"
 mv /data/tmp/eviltheme/vrtheme_restore.zip "/data/eviltheme-backup/restore-$datetime.zip"
-$theme "/data/eviltheme-backup/restore-$datetime.zip" ./*
+mv "/data/tmp/eviltheme/evt_$datetime.log" /data/eviltheme-backup/
+/tmp/zip -r "/data/eviltheme-backup/restore-$datetime.zip" ./* >> $(evtlog loglocation)
 
 # Cleanup
 ui_print "- Cleaning up"
@@ -261,5 +295,6 @@ $bb rm -fR /data/tmp/eviltheme
 $bb rm -fR /data/tmp/evt-backup
 ui_print "Done. If your device does not perform properly after this,"
 ui_print "just flash /data/eviltheme-backup/restore-$datetime.zip."
+evtlog "I: Cleanup process complete. Exiting."
 
 exit 0
