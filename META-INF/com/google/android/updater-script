@@ -2,11 +2,16 @@ ui_print("Insert theme information here.");
 
 ui_print("- Mounting filesystems");
 run_program("/sbin/busybox", "mount", "/system");
+run_program("/sbin/busybox", "mount", "/preload");
 run_program("/sbin/busybox", "mount", "/data");
 run_program("/sbin/busybox", "mount", "/cache");
 
-ui_print("- Extracting new files");
+ui_print("- Extracting new files, if any");
 package_extract_dir("new", "/");
+set_perm_recursive(0, 0, 0755, 0644, "/system/app");
+set_perm_recursive(0, 0, 0755, 0644, "/system/priv-app");
+set_perm_recursive(0, 0, 0755, 0644, "/preload/symlink/system/app");
+set_perm_recursive(0, 0, 0755, 0644, "/system/framework");
 
 ui_print("- Extracting theme engine");
 package_extract_dir("engine", "/tmp");
@@ -24,6 +29,7 @@ run_program("/tmp/installtheme.sh");
 
 ui_print("- Unmounting filesystems");
 unmount("/system");
+unmount("/preload");
 unmount("/data");
 unmount("/cache");
 
