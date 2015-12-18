@@ -25,7 +25,7 @@ evtlog() {
 	else
 		logfile="/data/tmp/eviltheme/evt_$datetime.log"
 	fi
-	if [ ! -e "$logfile" ]
+	if [ ! -e "$logfile" ]; then
 		$bb touch $logfile
 		chmod 0644 $logfile
 	fi
@@ -39,14 +39,14 @@ evtlog "I: This is EVilTheme version $evtVersion."
 
 # ROM checks
 getpropval() {
-	acquiredValue=`cat /system/build.prop | grep "^$2=" | cut -d"=" -f2 | tr -d '\r '`
+	acquiredValue=`cat /system/build.prop | grep "^$1=" | cut -d"=" -f2 | tr -d '\r '`
 	echo "$acquiredValue"
 }
 platformString=`getpropval "ro.build.version.release"`
 platform=`echo "$platformString" | cut -d. -f1`
-evtlog "I: Device is a `getpropval "ro.product.brand"` `getpropval "ro.product.model"`, running Android $platformString."
+evtlog "I: Device is running Android $platformString."
 if [ "$platform" -ge "5" ]; then
-	evtlog "I: Dalvik platform 2.0+ detected [$platformString]."
+	evtlog "I: ART runtime detected."
 	lollipop="1"
 	ui_print "- Adjusting engine for new app hierarchy"
 	friendlyname() {
@@ -62,7 +62,7 @@ if [ "$platform" -ge "5" ]; then
 		fi
 	}
 else
-	evtlog "I: Legacy Dalvik platform detected [$platformString]."
+	evtlog "I: Dalvik runtime detected."
 	checkdex() {
 		if [ -e ./classes.dex ]; then
 			evtlog "P: Replacement bytecode for $1 $2 present. Deleting old Dalvik entry."
