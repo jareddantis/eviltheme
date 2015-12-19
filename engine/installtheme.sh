@@ -1,8 +1,8 @@
-#!/sbin/sh
+#!/tmp/bash
 evtVersion="2.0.5"
 
 # Enhanced VRTheme engine
-# Copyright aureljared@XDA, 2014-2015.
+# Copyright aureljared@XDA, 2014-2016.
 #
 # Original VRTheme engine is copyright
 # VillainROM 2011. All rights reserved.
@@ -15,9 +15,18 @@ evtVersion="2.0.5"
 bb="/tmp/busybox"
 datetime=$($bb date +"%m%d%y-%H%M%S")
 OUTFD=$(ps | grep -v "grep" | grep -o -E "update_binary(.*)" | cut -d " " -f 3);
-[ $OUTFD != "" ] || OUTFD=$(ps | grep -v "grep" | grep -o -E "updater(.*)" | cut -d " " -f 3);
+[[ $OUTFD != "" ]] || OUTFD=$(ps | grep -v "grep" | grep -o -E "updater(.*)" | cut -d " " -f 3);
 
 # Welcome!
+ui_print() {
+	# Print to recovery screen
+	if [ $OUTFD != "" ]; then
+		echo "ui_print ${1} " 1>&$OUTFD;
+		echo "ui_print " 1>&$OUTFD;
+	else
+		echo "${1}";
+	fi;
+}
 evtlog() {
 	# Append to our own log file
 	if [ -d /data/eviltheme-backup ]; then
@@ -75,16 +84,7 @@ else
 	}
 fi
 
-# Define some methods
-ui_print() {
-	# Print to recovery screen
-	if [ $OUTFD != "" ]; then
-		echo "ui_print ${1} " 1>&$OUTFD;
-		echo "ui_print " 1>&$OUTFD;
-	else
-		echo "${1}";
-	fi;
-}
+# Define some more methods
 dir() {
 	# Make folder $1 if it doesn't exist yet
 	if [ ! -d "$1" ]; then
@@ -98,6 +98,61 @@ zpln() {
 		$bb mkdir -p ./aligned/$appDir
 	fi
 	/tmp/zipalign -f 4 "$1" ./aligned/$1
+}
+theme(){
+	path="$1/$2" # system/framework
+	evtlog "P: Processing apps in /$path."
+
+	cd "$vrroot/$path/"
+	dir "$vrbackup/$path"
+	dir "$vrroot/apply/$path"
+	dir "$vrroot/apply/$path/aligned"
+
+	for f in *.apk; do
+		cd "$f"
+		ui_print "  /$path/$f"
+		evtlog "P:   $f"
+
+		# Backup APK
+		if [ "$lollipop" -eq "1" ]; then
+			appPath="$(friendlyname $f)/$f"
+			dir "$vrbackup/$path/$(friendlyname $f)"
+			dir "$vrroot/apply/$path/$(friendlyname $f)"
+			cp "/$path/$appPath" "$vrbackup/$path/$(friendlyname $f)/"
+			cp "/$path/$appPath" "$vrroot/apply/$path/$(friendlyname $f)/"
+		else
+			cp "/$path/$f" "$vrbackup/$path/"
+			cp "/$path/$f" "$vrroot/apply/$path/"
+			appPath="$f"
+		fi
+
+		# Delete files in APK, if any
+		if [ -e "./delete.list" ]; then
+			readarray -t array < ./delete.list
+			for j in ${array[@]}; do
+				/tmp/zip -d "$vrroot/apply/$path/$appPath.zip" "$j" >> $(evtlog loglocation)
+			done
+			rm -f ./delete.list
+		fi
+
+		# Theme APK
+		mv "$vrroot/apply/$path/$appPath" "$vrroot/apply/$path/$appPath.zip"
+		/tmp/zip -r "$vrroot/apply/$path/$appPath.zip" ./* >> $(evtlog loglocation)
+
+		mv "$vrroot/apply/$path/$appPath.zip" "$vrroot/apply/$path/$appPath"
+
+		# Refresh bytecode if necessary
+		checkdex "$2" "$f"
+
+		# Zipalign APK
+		cd "$vrroot/apply/$path"
+		zpln "$appPath"
+
+		# Finish up
+		$bb cp -f "aligned/$appPath" "/$path/$appPath"
+		chmod 644 "/$path/$appPath"
+		cd "$vrroot/$path/"
+	done
 }
 
 # Work directories
@@ -116,168 +171,22 @@ evtlog "I: Preliminary operations complete. Starting theme process."
 
 # /system/app
 if [ "$sysapps" -eq "1" ]; then
-	evtlog "P: System app theme files present."
-	cd "$vrroot/system/app/"
-	dir "$vrbackup/system/app"
-	dir "$vrroot/apply/system/app"
-	dir "$vrroot/apply/system/app/aligned"
-
-	for f in *.apk; do
-		cd "$f"
-		ui_print "  sa: $f"
-		evtlog "P: Processing system app $f."
-
-		# Backup APK
-		if [ "$lollipop" -eq "1" ]; then
-			appPath="$(friendlyname $f)/$f"
-			dir "$vrbackup/system/app/$(friendlyname $f)"
-			dir "$vrroot/apply/system/app/$(friendlyname $f)"
-			cp "/system/app/$appPath" "$vrbackup/system/app/$(friendlyname $f)/"
-			cp "/system/app/$appPath" "$vrroot/apply/system/app/$(friendlyname $f)/"
-		else
-			cp "/system/app/$f" "$vrbackup/system/app/"
-			cp "/system/app/$f" "$vrroot/apply/system/app/"
-			appPath="$f"
-		fi
-
-		# Theme APK
-		mv "$vrroot/apply/system/app/$appPath" "$vrroot/apply/system/app/$appPath.zip"
-		/tmp/zip -r "$vrroot/apply/system/app/$appPath.zip" ./* >> $(evtlog loglocation)
-		mv "$vrroot/apply/system/app/$appPath.zip" "$vrroot/apply/system/app/$appPath"
-
-		# Refresh bytecode if necessary
-		checkdex "app" "$f"
-
-		# Zipalign APK
-		cd "$vrroot/apply/system/app"
-		zpln "$appPath"
-
-		# Finish up
-		$bb cp -f "aligned/$appPath" "/system/app/$appPath"
-		chmod 644 "/system/app/$appPath"
-		cd "$vrroot/system/app/"
-	done
+	theme "system" "app"
 fi
 
 # /preload/symlink/system/app
 if [ "$preload" -eq "1" ]; then
-	evtlog "P: System preload theme files present."
-	cd "$vrroot/preload/symlink/system/app/"
-	dir "$vrbackup/preload/symlink/system/app/"
-	dir "$vrroot/apply/preload/symlink/system/app"
-	dir "$vrroot/apply/preload/symlink/system/app/aligned"
-
-	for f in *.apk; do
-		cd "$f"
-		ui_print "  pr: $f"
-		evtlog "P: Processing preload app $f"
-
-		# Backup APK
-		cp "/preload/symlink/system/app/$f" "$vrbackup/preload/symlink/system/app/"
-		cp "/preload/symlink/system/app/$f" "$vrroot/apply/preload/symlink/system/app/"
-
-		# Theme APK
-		mv "$vrroot/apply/preload/symlink/system/app/$f" "$vrroot/apply/preload/symlink/system/app/$f.zip"
-		/tmp/zip -r "$vrroot/apply/preload/symlink/system/app/$f.zip" ./* >> $(evtlog loglocation)
-		mv "$vrroot/apply/preload/symlink/system/app/$f.zip" "$vrroot/apply/preload/symlink/system/app/$f"
-
-		# Refresh bytecode if necessary
-		checkdex "app" "$f"
-		cd ../
-
-		# Zipalign APK
-		cd "$vrroot/apply/preload/symlink/system/app"
-		zpln "$f"
-
-		# Finish up
-		$bb cp -f "aligned/$f" "/preload/symlink/system/app/"
-		chmod 644 "/preload/symlink/system/app/$f"
-		ln -s "/preload/symlink/system/app/$f" "/system/app/$f"
-		cd "$vrroot/preload/symlink/system/app/"
-	done
+	theme "preload/symlink/system" "app"
 fi
 
 # /system/priv-app
 if [ "$privapps" -eq "1" ]; then
-	evtlog "P: System priv-app theme files present."
-	cd "$vrroot/system/priv-app/"
-	dir "$vrbackup/system/priv-app"
-	dir "$vrroot/apply/system/priv-app"
-	dir "$vrroot/apply/system/priv-app/aligned"
-
-	for f in *.apk; do
-		cd "$f"
-		ui_print "  sp: $f"
-		evtlog "P: Processing priv-app $f."
-
-		# Backup APK
-		if [ "$lollipop" -eq "1" ]; then
-			appPath="$(friendlyname $f)/$f"
-			dir "$vrbackup/system/priv-app/$(friendlyname $f)"
-			dir "$vrroot/apply/system/priv-app/$(friendlyname $f)"
-			cp "/system/priv-app/$appPath" "$vrbackup/system/priv-app/$(friendlyname $f)/"
-			cp "/system/priv-app/$appPath" "$vrroot/apply/system/priv-app/$(friendlyname $f)/"
-		else
-			cp "/system/priv-app/$f" "$vrbackup/system/priv-app/"
-			cp "/system/priv-app/$f" "$vrroot/apply/system/priv-app/"
-			appPath="$f"
-		fi
-
-		# Theme APK
-		mv "$vrroot/apply/system/priv-app/$appPath" "$vrroot/apply/system/priv-app/$appPath.zip"
-		/tmp/zip -r "$vrroot/apply/system/priv-app/$appPath.zip" ./* >> $(evtlog loglocation)
-		mv "$vrroot/apply/system/priv-app/$appPath.zip" "$vrroot/apply/system/priv-app/$appPath"
-
-		# Refresh bytecode if necessary
-		checkdex "priv-app" "$f"
-		cd ../
-
-		# Zipalign APK
-		cd "$vrroot/apply/system/priv-app"
-		zpln "$appPath"
-
-		# Finish up
-		$bb cp -f "aligned/$appPath" "/system/priv-app/$appPath"
-		chmod 644 "/system/priv-app/$appPath"
-		cd "$vrroot/system/priv-app/"
-	done
+	theme "system" "priv-app"
 fi
 
 # /system/framework
 if [ "$framework" -eq "1" ]; then
-	evtlog "P: Framework theme files present."
-	cd "$vrroot/system/framework/"
-	dir "$vrbackup/system/framework"
-	dir "$vrroot/apply/system/framework"
-	dir "$vrroot/apply/system/framework/aligned"
-
-	for f in *.apk; do
-		cd "$f"
-		ui_print "  fw: $f"
-		evtlog "P: Processing framework app $f."
-
-		# Backup APK
-		cp "/system/framework/$f" "$vrbackup/system/framework/"
-		cp "/system/framework/$f" "$vrroot/apply/system/framework/"
-
-		# Theme APK
-		mv "$vrroot/apply/system/framework/$f" "$vrroot/apply/system/framework/$f.zip"
-		/tmp/zip -r "$vrroot/apply/system/framework/$f.zip" ./* >> $(evtlog loglocation)
-		mv "$vrroot/apply/system/framework/$f.zip" "$vrroot/apply/system/framework/$f"
-
-		# Refresh bytecode if necessary
-		checkdex "framework" "$f"
-		cd ../
-
-		# Zipalign APK
-		cd "$vrroot/apply/system/framework"
-		zpln "$f"
-
-		# Finish up
-		$bb cp -f "aligned/$f" "/system/framework/"
-		chmod 644 "/system/framework/$f"
-		cd "$vrroot/system/framework/"
-	done
+	theme "system" "framework"
 fi
 
 # Create flashable restore zip
@@ -286,13 +195,18 @@ evtlog "I: Theme process complete. Creating restore zip [$datetime]."
 cd "$vrbackup"
 dir "/data/eviltheme-backup"
 mv /data/tmp/eviltheme/vrtheme_restore.zip "/data/eviltheme-backup/restore-$datetime.zip"
-mv "/data/tmp/eviltheme/evt_$datetime.log" /data/eviltheme-backup/
+mv $(evtlog loglocation) /data/eviltheme-backup/
 /tmp/zip -r "/data/eviltheme-backup/restore-$datetime.zip" ./* >> $(evtlog loglocation)
 
 # Cleanup
 ui_print "- Cleaning up"
 $bb rm -fR /data/tmp/eviltheme
 $bb rm -fR /data/tmp/evt-backup
+$bb rm -f /tmp/installtheme.sh
+$bb rm -f /tmp/bash
+$bb rm -f /tmp/zipalign
+$bb rm -f /tmp/zip
+$bb rm -f /tmp/busybox
 ui_print "Done. If your device does not perform properly after this,"
 ui_print "just flash /data/eviltheme-backup/restore-$datetime.zip."
 evtlog "I: Cleanup process complete. Exiting."

@@ -1,4 +1,4 @@
-ui_print("Insert theme information here.");
+ui_print("Applying theme...");
 
 ui_print("- Mounting filesystems");
 run_program("/sbin/busybox", "mount", "/system");
@@ -22,6 +22,7 @@ package_extract_dir("vrtheme", "/data/tmp/eviltheme");
 ui_print("- Setting permissions for engine");
 set_perm(0, 0, 0755, "/tmp/installtheme.sh");
 set_perm(0, 0, 0755, "/tmp/busybox");
+set_perm(0, 0, 0755, "/tmp/bash");
 set_perm(0, 0, 0755, "/tmp/zipalign");
 set_perm(0, 0, 0755, "/tmp/zip");
 
