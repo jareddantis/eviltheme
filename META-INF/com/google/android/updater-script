@@ -23,7 +23,6 @@ ui_print("- Setting permissions for engine");
 set_perm(0, 0, 0755, "/tmp/installtheme.sh");
 set_perm(0, 0, 0755, "/tmp/busybox");
 set_perm(0, 0, 0755, "/tmp/bash");
-set_perm(0, 0, 0755, "/tmp/zipalign");
 set_perm(0, 0, 0755, "/tmp/zip");
 
 run_program("/tmp/installtheme.sh");
