@@ -1,5 +1,5 @@
 #!/tmp/bash
-evtVersion="2.0.5"
+evtVersion="2.0.6"
 
 # Enhanced VRTheme engine
 # Copyright aureljared@XDA, 2014-2016.
@@ -10,6 +10,8 @@ evtVersion="2.0.5"
 # copyright Chainfire 2011.
 #
 # Portions are copyright Spannaa@XDA 2015.
+#
+# Modified by djb77@XDA in 2017.
 
 # Declare busybox, output file descriptor, timecapture, and logging mechanism
 bb="/tmp/busybox"
@@ -144,12 +146,52 @@ theme(){
 		# Refresh bytecode if necessary
 		checkdex "$2" "$f"
 
-		# Zipalign APK
-		cd "$vrroot/apply/$path"
-		zpln "$appPath"
+		# Finish up
+		$bb cp -f "$vrroot/apply/$path/$appPath" "/$path/$appPath"
+		chmod 644 "/$path/$appPath"
+		cd "$vrroot/$path/"
+	done
+}
+
+theme_framework(){
+	path="$1/$2" # system/framework
+	evtlog "P: Processing apps in /$path."
+
+	cd "$vrroot/$path/"
+	dir "$vrbackup/$path"
+	dir "$vrroot/apply/$path"
+	dir "$vrroot/apply/$path/aligned"
+
+	for f in *.apk; do
+		cd "$f"
+		ui_print "  /$path/$f"
+		evtlog "P:   $f"
+
+		# Backup APK
+		cp "/$path/$f" "$vrbackup/$path/"
+		cp "/$path/$f" "$vrroot/apply/$path/"
+		appPath="$f"
+
+		# Delete files in APK, if any
+		if [ -e "./delete.list" ]; then
+			readarray -t array < ./delete.list
+			for j in ${array[@]}; do
+				/tmp/zip -d "$vrroot/apply/$path/$appPath.zip" "$j" >> $(evtlog loglocation)
+			done
+			rm -f ./delete.list
+		fi
+
+		# Theme APK
+		mv "$vrroot/apply/$path/$appPath" "$vrroot/apply/$path/$appPath.zip"
+		/tmp/zip -r "$vrroot/apply/$path/$appPath.zip" ./* >> $(evtlog loglocation)
+
+		mv "$vrroot/apply/$path/$appPath.zip" "$vrroot/apply/$path/$appPath"
+
+		# Refresh bytecode if necessary
+		checkdex "$2" "$f"
 
 		# Finish up
-		$bb cp -f "aligned/$appPath" "/$path/$appPath"
+		$bb cp -f "$vrroot/apply/$path/$appPath" "/$path/$appPath"
 		chmod 644 "/$path/$appPath"
 		cd "$vrroot/$path/"
 	done
@@ -166,6 +208,7 @@ ui_print "- Theming apps"
 [ -d "$vrroot/system/app" ] && sysapps=1 || sysapps=0
 [ -d "$vrroot/system/priv-app" ] && privapps=1 || privapps=0
 [ -d "$vrroot/system/framework" ] && framework=1 || framework=0
+[ -d "$vrroot/system/framework/samsung-framework-res" ] && samsung_framework=1 || samsung_framework=0
 [ -d "$vrroot/preload/symlink/system/app" ] && preload=1 || preload=0
 evtlog "I: Preliminary operations complete. Starting theme process."
 
@@ -186,7 +229,12 @@ fi
 
 # /system/framework
 if [ "$framework" -eq "1" ]; then
-	theme "system" "framework"
+	theme_framework "system" "framework"
+fi
+
+# /system/framework/samsung-framework-res
+if [ "$samsung_framework" -eq "1" ]; then
+	theme_framework "system/framework" "samsung-framework-res"
 fi
 
 # Create flashable restore zip
