@@ -129,6 +129,7 @@ theme(){
 		fi
 
 		# Delete files in APK, if any
+		mv "$vrroot/apply/$path/$appPath" "$vrroot/apply/$path/$appPath.zip"
 		if [ -e "./delete.list" ]; then
 			readarray -t array < ./delete.list
 			for j in ${array[@]}; do
@@ -138,9 +139,7 @@ theme(){
 		fi
 
 		# Theme APK
-		mv "$vrroot/apply/$path/$appPath" "$vrroot/apply/$path/$appPath.zip"
 		/tmp/zip -r "$vrroot/apply/$path/$appPath.zip" ./* >> $(evtlog loglocation)
-
 		mv "$vrroot/apply/$path/$appPath.zip" "$vrroot/apply/$path/$appPath"
 
 		# Refresh bytecode if necessary
@@ -173,6 +172,7 @@ theme_framework(){
 		appPath="$f"
 
 		# Delete files in APK, if any
+		mv "$vrroot/apply/$path/$appPath" "$vrroot/apply/$path/$appPath.zip"
 		if [ -e "./delete.list" ]; then
 			readarray -t array < ./delete.list
 			for j in ${array[@]}; do
@@ -182,9 +182,7 @@ theme_framework(){
 		fi
 
 		# Theme APK
-		mv "$vrroot/apply/$path/$appPath" "$vrroot/apply/$path/$appPath.zip"
 		/tmp/zip -r "$vrroot/apply/$path/$appPath.zip" ./* >> $(evtlog loglocation)
-
 		mv "$vrroot/apply/$path/$appPath.zip" "$vrroot/apply/$path/$appPath"
 
 		# Refresh bytecode if necessary
