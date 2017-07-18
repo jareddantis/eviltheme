@@ -13,7 +13,8 @@ version=$themeVersion
 versionCode=$themeVersionCode
 author=$themeAuthor
 description=$themeDescription
-donate=$themeDonateUrl
+donate=$themeDonate
+support=$themeSupport
 template=4
 EOF
 touch "$target/auto_mount"
