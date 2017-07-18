@@ -1,0 +1,37 @@
+#!/sbin/sh
+SYSTEMLESS=$1       # 1 or 0. Theme is being installed in systemless (Magisk 13.1+) mode
+MODDIR="$2"         # Path to theme systemless folder - /magisk/<themeId>
+
+########################################################################
+# Remember to rename this file as perms.sh if you are going to use it! #
+########################################################################
+
+# set_perm(uid, gid, mode, file, <context>)
+set_perm() {
+    chown $1:$2 $4
+    chmod $3 $4
+    if [ ! -z $5 ]; then
+        chcon $5 $4
+    else
+        chcon 'u:object_r:system_file:s0' $1
+    fi
+}
+# set_perm_recursive(uid, gid, folderMode, fileMode, dir, <context>)
+set_perm_recursive() {
+    find $5 -type d 2>/dev/null | while read dir; do
+        set_perm $1 $2 $3 $dir $6
+    done
+    find $5 -type f 2>/dev/null | while read file; do
+        set_perm $1 $2 $4 $file $6
+    done
+}
+
+if [ $SYSTEMLESS -eq 1 ]; then
+    # Set your permissions here (systemless install)
+    # Example: set_perm 0 0 0755 "$MODDIR/system/build.prop"
+else
+    # Set your permissions here (system install)
+    # Example: set_perm_recursive 0 0 0755 0644 /system/app 'u:object_r:system_file:s0'
+fi
+
+exit 0

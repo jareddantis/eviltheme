@@ -1,0 +1,32 @@
+# Theme ID. Must NOT contain any spaces.
+# Please use the same ID throughout all versions of your theme.
+themeId="aureljared-eviltheme-template"
+
+# Theme name
+themeName="EVilTheme"
+
+# Theme author
+themeAuthor="aureljared"
+
+# Theme version
+themeVersion="3.0.0"
+
+# Theme version code. Must be an integer,
+# and the next version of your theme must have a version code
+# greater than this one.
+themeVersionCode="16"
+
+# Theme description, support, and donate URLs.
+# Will be shown in Magisk Manager.
+themeDescription="This module does nothing."
+themeSupport="https://aureljared.tk/"
+themeDonate="3NbsP1zgen4K5RBxpwD15TNKExoKGZSXyM"
+
+# Theme intro. Will be shown during flashing in recovery.
+# If you wish to use double quotes, please escape them (\")
+# or replace the double quotes below with single quotes.
+themeIntro() {
+    ui_print ""
+    ui_print "EVilTheme Template"
+    ui_print ""
+}
