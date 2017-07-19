@@ -127,7 +127,7 @@ theme() {
             # Finish up
             [ "$ART" -eq "1" ] && vrOut="$vrTarget/$(friendlyname $f)/$f" || vrOut="$vrTarget/$f"
             cp "$cpFlags" "$vrRoot/apply/$appPath" "$vrOut"
-            set_perm $appUid $appGid $appPerms "$vrOut" "$appContext"
+            [ "$cpContextSupported" -eq "0" ] && chcon "$appContext" "$vrOut"
             cd "$vrRoot/$path"
         else
             ui_print " !! $origPath not found"
