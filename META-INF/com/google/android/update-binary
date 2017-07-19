@@ -61,99 +61,97 @@ fi
 # Systemless installation detection
 suimg=$(ls /data/magisk.img || ls /cache/magisk.img) 2>/dev/null
 if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
-    MAGISKBIN="$(echo $suimg | sed 's~.img~~g')"
     ui_print "Attempting systemless mode"
+    MAGISKBIN="$(echo $suimg | sed 's~.img~~g')"
+    SYSTEMLESS=1
+    sumnt="/$(basename $suimg .img)"
 
     # Check for Magisk 13.1+
-    ui_print "Analyzing Magisk installation"
     [ -d "$MAGISKBIN" -a -f "$MAGISKBIN/magisk" -a -f "$MAGISKBIN/util_functions.sh" ] && oldMagisk=0 || oldMagisk=1
-    if [ "$oldMagisk" -eq "0" ]; then
-        SYSTEMLESS=1
-        sumnt="/$(basename $suimg .img)"
-        
-        # Calculate free space
-        curBlocks=$(e2fsck -n $suimg 2>/dev/null | grep $suimg | cut -d, -f3 | cut -d\  -f2)
-        curUsed=$(echo "$curBlocks" | cut -d/ -f1)
-        curSize=$(echo "$curBlocks" | cut -d/ -f2)
-        curFreeM=$(((curSize - curUsed) * 4 / 1024))
-        curUsedM=$((curUsed * 4 / 1024))
-        curSizeM=$((curSize * 4 / 1024))
-        ui_print " * Free space: $curFreeM of $curSizeM MB"
-
-        # Calculate size of themed apps
-        needAppSizeK=0
-        find $vrRoot/system -name '*.apk' 2>/dev/null | while read f; do
-            if [ "$ART" -eq "1" ]; then
-                apkFile=$(echo $f | grep -o '[^/]*$')
-                newRoot="${root}system"
-                apkPath="$(echo $f | sed "s~${vrRoot}~~g" | sed "s~/system~${newRoot}~g" | sed 's/.apk//g')/$apkFile"
-            else
-                apkPath=$(echo $f | sed "s~${vrRoot}~~g" | sed "s~/system~${root}system~g")
-            fi
-            sizeK=$(du -sk $apkPath | cut -f1)
-            needAppSizeK=$((sizeK + needAppSizeK))
-        done
-        [ "$needAppSizeK" -gt "0" ] && needAppSizeM=$((needAppSizeK / 1024)) || needAppSizeM=0
-        ui_print " * Theme size: $needAppSizeM MB"
-
-        # Calculate size of new files
-        needNewSize=$(unzip -l $ZIPFILE 'system/*' | tr -s ' ' ' ' | tail -1 | cut -d' ' -f2)
-        needNewSizeK=$((needNewSize / 1024))
-        [ "$needNewSize" -gt "0" ] && needNewSizeM=$((needNewSizeK / 1024)) || needNewSizeM=0
-        ui_print " * New files: $needNewSizeM MB"
-
-        # Calculate total theme size
-        needSizeM=$(((needAppSizeK + needNewSizeK) / 1024))
-        if [ "$needSizeM" -lt "$curFreeM" ]; then
-            ui_print " * Free space enough, not resizing."
-        else
-            newSizeM=$(((needSizeM + curUsedM) + 32))   # 32MB extra
-            dataFreeBlocks=$(df -kP /data | tr -s ' ' $'\t' | cut -f4 | grep -vE "^Available")
-            dataFreeM=$((dataFreeBlocks / 1024))
-            if [ "$dataFreeM" -gt "$newSizeM" ]; then
-                ui_print " * Resizing to $needSizeM MB"
-                resize2fs $suimg ${needSizeM}M
-            else
-                ui_print " * Error: /data has too little free space."
-                ui_print "   To force a non-systemless installation,"
-                ui_print "   create a file called .eviltheme-force-system"
-                ui_print "   in your /sdcard."
-                cleanup
-                exit 1
-            fi
-        fi
-
-        # Mount image
-        ui_print "Mounting magisk.img"
-        test ! -e $sumnt && mkdir $sumnt
-        mount -t ext4 -o rw,noatime $suimg $sumnt
-        for i in 0 1 2 3 4 5 6 7; do
-            case `mount` in
-                *" $sumnt "*) break;;
-            esac;
-            loop=/dev/block/loop$i
-            if [ ! -f "$loop" -o ! -b "$loop" ]; then
-                mknod $loop b 7 $i
-            fi
-            losetup $loop $suimg && mount -t ext4 -o loop $loop $sumnt
-        done
-
-        # Generate module.prop for Magisk
-        ui_print "Creating Magisk module $themeId"
-        targetParent="$sumnt/$themeId"
-        target="$targetParent/system"
-        mkdir -p $target
-        $vrEngine/magisk-setup.sh $vrEngine/eviltheme.prop $targetParent
-        echo -e "\nthemeSize=$needSizeM\n" >> $vrBackupStaging/eviltheme.prop
+    if [ "$oldMagisk" -eq "1" ]; then
+        magiskTemplate=3
+        ui_print "Magisk version < 13.1 detected"
+        ui_print " * If any problems occur, try updating"
+        ui_print "   Magisk and flash this theme again."
     else
-        ui_print " * Error: Old Magisk version detected."
-        ui_print "   Please update to Magisk 13.1+, or"
-        ui_print "   force a non-systemless installation by"
-        ui_print "   creating a file called .eviltheme-force-system"
-        ui_print "   in your /sdcard."
-        cleanup
-        exit 1
+        magiskTemplate=4
+        ui_print "Magisk version >= 13.1 detected"
     fi
+
+    # Calculate free space
+    curBlocks=$(e2fsck -n $suimg 2>/dev/null | grep $suimg | cut -d, -f3 | cut -d\  -f2)
+    curUsed=$(echo "$curBlocks" | cut -d/ -f1)
+    curSize=$(echo "$curBlocks" | cut -d/ -f2)
+    curFreeM=$(((curSize - curUsed) * 4 / 1024))
+    curUsedM=$((curUsed * 4 / 1024))
+    curSizeM=$((curSize * 4 / 1024))
+    ui_print " * Free space: $curFreeM of $curSizeM MB"
+
+    # Calculate size of themed apps
+    needAppSizeK=0
+    find $vrRoot/system -name '*.apk' 2>/dev/null | while read f; do
+        if [ "$ART" -eq "1" ]; then
+            apkFile=$(echo $f | grep -o '[^/]*$')
+            newRoot="${root}system"
+            apkPath="$(echo $f | sed "s~${vrRoot}~~g" | sed "s~/system~${newRoot}~g" | sed 's/.apk//g')/$apkFile"
+        else
+            apkPath=$(echo $f | sed "s~${vrRoot}~~g" | sed "s~/system~${root}system~g")
+        fi
+        sizeK=$(du -sk $apkPath | cut -f1)
+        needAppSizeK=$((sizeK + needAppSizeK))
+    done
+    [ "$needAppSizeK" -gt "0" ] && needAppSizeM=$((needAppSizeK / 1024)) || needAppSizeM=0
+    ui_print " * Theme size: $needAppSizeM MB"
+
+    # Calculate size of new files
+    needNewSize=$(unzip -l $ZIPFILE 'system/*' | tr -s ' ' ' ' | tail -1 | cut -d' ' -f2)
+    needNewSizeK=$((needNewSize / 1024))
+    [ "$needNewSize" -gt "0" ] && needNewSizeM=$((needNewSizeK / 1024)) || needNewSizeM=0
+    ui_print " * New files: $needNewSizeM MB"
+
+    # Calculate total theme size
+    needSizeM=$(((needAppSizeK + needNewSizeK) / 1024))
+    if [ "$needSizeM" -lt "$curFreeM" ]; then
+        ui_print " * Free space enough, not resizing."
+    else
+        newSizeM=$(((needSizeM + curUsedM) + 32))   # 32MB extra
+        dataFreeBlocks=$(df -kP /data | tr -s ' ' $'\t' | cut -f4 | grep -vE "^Available")
+        dataFreeM=$((dataFreeBlocks / 1024))
+        if [ "$dataFreeM" -gt "$newSizeM" ]; then
+            ui_print " * Resizing to $needSizeM MB"
+            resize2fs $suimg ${needSizeM}M
+        else
+            ui_print " * Error: /data has too little free space."
+            ui_print "   To force a non-systemless installation,"
+            ui_print "   create a file called .eviltheme-force-system"
+            ui_print "   in your /sdcard."
+            cleanup
+            exit 1
+        fi
+    fi
+
+    # Mount image
+    ui_print "Mounting magisk.img"
+    test ! -e $sumnt && mkdir $sumnt
+    mount -t ext4 -o rw,noatime $suimg $sumnt
+    for i in 0 1 2 3 4 5 6 7; do
+        case `mount` in
+            *" $sumnt "*) break;;
+        esac;
+        loop=/dev/block/loop$i
+        if [ ! -f "$loop" -o ! -b "$loop" ]; then
+            mknod $loop b 7 $i
+        fi
+        losetup $loop $suimg && mount -t ext4 -o loop $loop $sumnt
+    done
+
+    # Generate module.prop for Magisk
+    ui_print "Creating Magisk module $themeId"
+    targetParent="$sumnt/$themeId"
+    target="$targetParent/system"
+    mkdir -p $target
+    $vrEngine/magisk-setup.sh $vrEngine/eviltheme.prop $targetParent $magiskTemplate
+    echo -e "\nthemeSize=$needSizeM\n" >> $vrBackupStaging/eviltheme.prop
 else
     ui_print "Installing in system mode"
     mount -o rw,remount /system

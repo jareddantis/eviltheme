@@ -4,6 +4,7 @@
 # https://github.com/aureljared/eviltheme
 . "$1"
 target="$2"
+templateVersion="$3"
 
 # Create module.prop
 cat << EOF > "$target/module.prop"
@@ -15,7 +16,7 @@ author=$themeAuthor
 description=$themeDescription
 donate=$themeDonate
 support=$themeSupport
-template=4
+template=$templateVersion
 EOF
 touch "$target/auto_mount"
 exit 0
