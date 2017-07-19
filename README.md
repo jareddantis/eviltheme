@@ -12,16 +12,17 @@ Eviltheme is based on the VRTheme Engine from 2011, though versions 3.x.x and up
 - Supports both Dalvik and ART platforms
 - Smart bytecode refresh (delete classes.dex/classes.art only if it is replaced by the theme)
 - Easy uninstallation via automatically generated flashable ZIP
+- Support for post-install and post-uninstall scripts
 - Delete files (even inside APKs)
 
 ## Scripts
 
-- `META-INF/com/google/android/update-binary` - main script
+- `META-INF/com/google/android/update-binary` - main recovery script
 - `META-INF/tk/aureljared/eviltheme/recovery-utils.sh` - functions for recovery, like `ui_print` and `set_perm_recursive`
-- `META-INF/tk/aureljared/eviltheme/eviltheme-utils.sh` - EVilTheme functions. This is where the theming logic is defined
-- `META-INF/tk/aureljared/eviltheme/permissions.sh-example` - example script for setting custom theme permissions
-- `META-INF/tk/aureljared/eviltheme/custom.sh-example` - example script for custom theme post-installation script
+- `META-INF/tk/aureljared/eviltheme/eviltheme-utils.sh` - EVilTheme functions. This is where the theming logic is defined.
 - `META-INF/tk/aureljared/eviltheme/magisk-setup.sh` - script that handles Magisk Module Template compatibility (module.prop creation)
+- `META-INF/tk/aureljared/eviltheme/post-install.sh-example` - example post-installation script. This script is run after setting permissions and before creating the restore ZIP.
+- `META-INF/tk/aureljared/eviltheme/post-uninstall.sh-example` - example post-uninstallation script. This script is run after restoring files and before wiping Dalvik cache.
 
 ## Usage
 

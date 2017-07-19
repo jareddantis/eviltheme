@@ -252,32 +252,38 @@ if [ "$HASTHEMEFILES" -eq "1" ]; then
     set_progress 0.80
 fi
 
+# Set permissions
+ui_print "Setting permissions"
+if [ "$HASTHEMEFILES" -eq "1" ]; then
+    [ "$SYSTEMLESS" -eq "1" ] && rootDir="$targetParent" || rootDir="$root"
+    [ -d "$vrroot/system/app" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/app"
+    [ -d "$vrroot/system/priv-app" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/priv-app"
+    [ -d "$vrroot/preload/symlink/system/app" ] && set_perm_recursive 0 0 0755 0644 "/preload/symlink/system/app"
+    [ -d "$vrroot/system/framework" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/framework"
+    [ -d "$vrroot/system/framework/samsung-framework-res" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/framework/samsung-framework-res"
+fi
+
 # Execute custom script
-[ -f "$vrengine/custom.sh" ] && $vrengine/custom.sh "$vrengine/recovery-utils.sh" "$ZIPFILE" $SYSTEMLESS "$targetParent"
+[ -f "$vrengine/post-install.sh" ] && $vrengine/post-install.sh "$vrengine/recovery-utils.sh" "$ZIPFILE" "$target" "$vrbackupstaging"
 set_progress 0.90
 
 # Create flashable restore zip
 if [ "$(ls -A $vrbackupstaging/)" ]; then
     ui_print "Creating restore ZIP"
     restoreZip="$vrbackup/$themeId-restore-$TIMESTAMP.zip"
+
+    # Delete empty lists
+    [ -z "$(cat $vrbackupstaging/bytecode.list)" ] && rm -f $vrbackupstaging/bytecode.list
+    [ -z "$(cat $vrbackupstaging/delete.list)" ] && rm -f $vrbackupstaging/delete.list
+
+    # Copy post uninstallation script
+    [ -f "$vrengine/post-uninstall.sh" ] && cp -f "$vrengine/post-uninstall.sh" "$vrbackupstaging/"
+
+    # Create zip
     mkdir -p $vrbackup && cd $vrbackupstaging
-    [ "$(cat $vrbackupstaging/bytecode.list)" == "" ] && rm -f $vrbackupstaging/bytecode.list
-    [ "$(cat $vrbackupstaging/delete.list)" == "" ] && rm -f $vrbackupstaging/delete.list
     $vrengine/zip -r9 "$vrroot/restore_template.zip" .
     mv "$vrroot/restore_template.zip" "$restoreZip"
     set_progress 0.95
-fi
-
-# Set permissions
-ui_print "Setting permissions"
-[ "$SYSTEMLESS" -eq "1" ] && rootDir="$targetParent" || rootDir="$root"
-[ -f "$vrengine/permissions.sh" ] && $vrengine/perms.sh $SYSTEMLESS $rootDir
-if [ "$HASTHEMEFILES" -eq "1" ]; then
-    [ -d "$vrroot/system/app" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/app"
-    [ -d "$vrroot/system/priv-app" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/priv-app"
-    [ -d "$vrroot/preload/symlink/system/app" ] && set_perm_recursive 0 0 0755 0644 "/preload/symlink/system/app"
-    [ -d "$vrroot/system/framework" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/framework"
-    [ -d "$vrroot/system/framework/samsung-framework-res" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/framework/samsung-framework-res"  
 fi
 
 # Cleanup
