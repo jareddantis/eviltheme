@@ -3,11 +3,11 @@
 # Licensed under GPL v3
 # https://github.com/aureljared/eviltheme
 . "$1"
-target="$2"
+MODDIR="$2"
 templateVersion="$3"
 
 # Create module.prop
-cat << EOF > "$target/module.prop"
+cat << EOF > "$MODDIR/module.prop"
 id=$themeId
 name=$themeName
 version=$themeVersion
@@ -18,5 +18,5 @@ donate=$themeDonate
 support=$themeSupport
 template=$templateVersion
 EOF
-touch "$target/auto_mount"
+touch "$MODDIR/auto_mount"
 exit 0

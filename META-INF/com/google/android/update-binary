@@ -145,12 +145,17 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
         losetup $loop $suimg && mount -t ext4 -o loop $loop $sumnt
     done
 
-    # Generate module.prop for Magisk
+    # Create Magisk module folder
     ui_print "Creating Magisk module $themeId"
-    targetParent="$sumnt/$themeId"
-    target="$targetParent/system"
+    MODDIR="$sumnt/$themeId"
+    target="$MODDIR/system"
+
+    # Copy Magisk module files
     mkdir -p $target
-    $vrEngine/magisk-setup.sh $vrEngine/eviltheme.prop $targetParent $magiskTemplate
+    $vrEngine/magisk-setup.sh $vrEngine/eviltheme.prop $MODDIR $magiskTemplate
+    cp -f "$vrEngine/META-INF/tk/aureljared/magisk-common/*" "$MODDIR/"
+
+    # Store theme size in eviltheme.prop for later reference by restore ZIP
     echo -e "\nthemeSize=$needSizeM\n" >> $vrBackupStaging/eviltheme.prop
 else
     ui_print "Installing in system mode"
@@ -198,7 +203,7 @@ for f in $(list_new_datafiles $ZIPFILE); do echo "/$f" >> $vrBackupStaging/delet
 if [ "$SYSTEMLESS" -eq "1" ]; then
     # No need to handle /system backups for systemless
     # as the module itself can simply be removed
-    unzip -o "$ZIPFILE" 'system/*' -d "$targetParent"
+    unzip -o "$ZIPFILE" 'system/*' -d "$MODDIR"
 else
     for f in $(list_new_sysfiles $ZIPFILE); do
         # Add file to delete.list in restore zip
