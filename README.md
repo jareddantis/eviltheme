@@ -23,6 +23,7 @@ Eviltheme is based on the VRTheme Engine from 2011, though versions 3.x.x and up
 - `META-INF/tk/aureljared/eviltheme/magisk-setup.sh` - script that handles Magisk Module Template compatibility (module.prop creation)
 - `META-INF/tk/aureljared/eviltheme/post-install.sh-example` - example post-installation script. This script is run after setting permissions and before creating the restore ZIP.
 - `META-INF/tk/aureljared/eviltheme/post-uninstall.sh-example` - example post-uninstallation script. This script is run after restoring files and before wiping Dalvik cache.
+- `META-INF/tk/aureljared/magisk-common/*` - Magisk module files (`post-fs-data.sh`, `service.sh`, and `system.prop`). See [topjohnwu/magisk-module-template](https://github.com/topjohnwu/magisk-module-template)
 
 ## Usage
 
