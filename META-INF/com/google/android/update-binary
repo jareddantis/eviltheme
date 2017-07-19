@@ -224,7 +224,8 @@ fi
 # Start theming
 if [ -d "$vrRoot/system" -o -d "$vrRoot/preload" ]; then
     ui_print "Applying theme"
-    [ -z "$(ls -Z /init.rc 2>&1 | grep 'illegal')" ] && lsContextSupported=1
+    [ -z "$(cp -c /init.rc /tmp/ 2>&1 | grep 'illegal')" ] && cpContextSupported=1 || cpContextSupported=0
+    [ -z "$(ls -Z /init.rc 2>&1 | grep 'illegal')" ] && lsContextSupported=1 || lsContextSupported=0
     [ -d "$vrRoot/system/app" ] && theme "system" "app"
     [ -d "$vrRoot/system/priv-app" ] && theme "system" "priv-app"
     [ -d "$vrRoot/preload/symlink/system/app" ] && theme "preload/symlink/system" "app"

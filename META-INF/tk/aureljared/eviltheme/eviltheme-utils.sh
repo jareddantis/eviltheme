@@ -71,6 +71,7 @@ get_octal_perms() {
 
 theme() {
     path="$1/$2" # system/app
+    [ "$cpContextSupported" -eq "1" ] && cpFlags="-afc" || cpFlags="-af"
     cd "$vrRoot/$path"
 
     # Create working directories:                  /preload/...      or /magisk/<theme-id>/system/app or (/system)/system/app
@@ -95,16 +96,17 @@ theme() {
                 [ "$SYSTEMLESS" -eq "1" ] && mkdir -p "$vrTarget/$(friendlyname $f)" || mkdir -p "$vrBackupStaging/$path/$(friendlyname $f)"
             fi
 
-            # Get original UID, GID, permissions, and SELinux context
-            appUid="$(ls -l $origPath | awk 'NR==1 {print $3}')"
-            appGid="$(ls -l $origPath | awk 'NR==1 {print $4}')"
-            appPerms="$(get_octal_perms $origPath)"
-            [ "$lsContextSupported" -eq "1" ] && appContext="$(ls -Z $origPath | tr -s ' ' ' ' | cut -f2 -d' ')" || appContext='u:object_r:system_file:s0'
+            # Get original SELinux context
+            if [ "$cpContextSupported" -eq "0" ] && [ "$lsContextSupported" -eq "1" ]; then
+                appContext="$(ls -Z $origPath | tr -s ' ' ' ' | cut -f2 -d' ')"
+            else
+                appContext='u:object_r:system_file:s0'
+            fi
             [ "$themeDebug" -eq "1" ] && echo "$vrOut $appUid $appGid $appPerms '$appContext'" >> $vrBackupStaging/contexts.list
 
             # Copy APK and backup if not systemless
-            cp -c "$origPath" "$vrApp"
-            [ "$SYSTEMLESS" -eq "0" ] && cp "$origPath" "$vrBackupStaging/$origPath"
+            cp "$cpFlags" "$origPath" "$vrApp"
+            [ "$SYSTEMLESS" -eq "0" ] && cp "$cpFlags" "$origPath" "$vrBackupStaging/$origPath"
 
             # Delete files in APK, if any
             cd "$f"
@@ -124,7 +126,7 @@ theme() {
 
             # Finish up
             [ "$ART" -eq "1" ] && vrOut="$vrTarget/$(friendlyname $f)/$f" || vrOut="$vrTarget/$f"
-            cp -f "$vrRoot/apply/$appPath" "$vrOut"
+            cp "$cpFlags" "$vrRoot/apply/$appPath" "$vrOut"
             set_perm $appUid $appGid $appPerms "$vrOut" "$appContext"
             cd "$vrRoot/$path"
         else
