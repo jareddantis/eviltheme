@@ -221,19 +221,21 @@ for f in $(list_new_datafiles $ZIPFILE); do
     echo "/$f" >> $vrbackupstaging/delete.list
 done
 if [ "$SYSTEMLESS" -eq "1" ]; then
-    # No need to handle backups for systemless
+    # No need to handle /system backups for systemless
     # as the module itself can simply be removed
     unzip -o "$ZIPFILE" 'system/*' -d "$targetParent"
 else
     for f in $(list_new_sysfiles $ZIPFILE); do
+        # Add file to delete.list in restore zip
+        [ "$root" == "/system" ] && fileName="/$root/$f" || fileName="/$f"
+        echo "$fileName" >> $vrbackupstaging/delete.list
+
+        # Check if file exists
         if [ -e "/$root/$f" ]; then
-            # Copy old files to backup folder
+            # File exists, copy existing file to backup folder
             fileDir="$vrbackupstaging/$(dirname /$root/$f)"
             mkdir -p $fileDir
             cp -fp "/$root/$f" "$fileDir/"
-        else
-            # Add files to delete.list in restore zip
-            echo "/$root/$f" >> $vrbackupstaging/delete.list
         fi
     done
     unzip -o "$ZIPFILE" 'system/*' -d "/$root"
