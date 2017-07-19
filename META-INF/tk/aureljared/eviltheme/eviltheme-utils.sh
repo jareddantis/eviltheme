@@ -128,7 +128,7 @@ theme() {
             set_perm $appUid $appGid $appPerms "$vrOut" "$appContext"
             cd "$vrRoot/$path"
         else
-            ui_print " !! $origPath does not exist, skipping"
+            ui_print " !! $origPath not found"
         fi
     done
 }

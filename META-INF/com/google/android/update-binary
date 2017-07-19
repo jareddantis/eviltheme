@@ -259,7 +259,12 @@ set_progress 1.00
 
 # Goodbye
 ui_print "Done."
-[ "$SYSTEMLESS" -eq "0" ] && ui_print "" && ui_print "To uninstall, flash $restoreZip."
+ui_print ""
+if [ "$SYSTEMLESS" -eq "0" ]; then
+    ui_print "To uninstall, flash $restoreZip."
+else
+    ui_print "To uninstall, remove the \"$themeName\" module in Magisk Manager."
+fi
 ui_print ""
 set_progress 1.34
 exit 0
