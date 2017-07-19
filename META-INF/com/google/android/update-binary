@@ -17,9 +17,9 @@ rm -rf $vrroot $vrbackupstaging $vrengine && mkdir $vrengine
 unzip -o "$ZIPFILE" "META-INF/tk/aureljared/*" "eviltheme.prop" -d $vrengine
 find "$vrengine/META-INF/tk/aureljared/eviltheme" -type f -exec mv {} "$vrengine/" \;
 chmod -R 0755 $vrengine/*
-source $vrengine/recovery-utils.sh
-source $vrengine/eviltheme-utils.sh
-source $vrengine/eviltheme.prop
+. $vrengine/recovery-utils.sh
+. $vrengine/eviltheme-utils.sh
+. $vrengine/eviltheme.prop
 
 # Please don't remove this, thanks!
 themeIntro

@@ -1,5 +1,5 @@
 #!/sbin/sh
-source "$1"         # Inherit recovery utils
+. "$1"              # Inherit recovery utils
 ZIPFILE="$2"        # Theme zip file
 SYSTEMLESS=$3       # 1 or 0. Theme is being installed in systemless (Magisk 13.1+) mode
 MODDIR="$4"         # Path to theme systemless folder - /magisk/<themeId>

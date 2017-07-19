@@ -2,7 +2,7 @@
 # Eviltheme by Jared Dantis (@aureljared)
 # Licensed under GPL v3
 # https://github.com/aureljared/eviltheme
-source "$1"
+. "$1"
 target="$2"
 
 # Create module.prop
