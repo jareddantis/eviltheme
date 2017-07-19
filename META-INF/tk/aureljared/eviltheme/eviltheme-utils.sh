@@ -49,6 +49,26 @@ checkdex() {
     [ "$ART" -eq "1" ] && checkdex_art "$@" || checkdex_dalvik "$@"
 }
 
+convert_to_octal() {
+    perm=0
+    [ ! -z "$(echo $1 | grep 'r')" ] && perm=$((perm + 4))
+    [ ! -z "$(echo $1 | grep 'w')" ] && perm=$((perm + 2))
+    [ ! -z "$(echo $1 | grep 'x')" ] && perm=$((perm + 1))
+    echo $perm
+}
+get_octal_perms() {
+    # stat -c is not supported in all recovery versions of busybox
+    # so we have to do this manually
+    permsString="$(ls -l $1 | tr -s ' ' ' ' | cut -f1 -d' ' | sed -r 's/^.{1}//')"   # rwxr-xr-x
+    userPermString="$(echo $permsString | cut -c1-3)"                                # rwx
+    groupPermString="$(echo $permsString | cut -c4-6)"                               # r-x
+    worldPermString="$(echo $permsString | cut -c7-9)"                               # r-x
+    userPerm="$(convert_to_octal $userPermString)"                                   # 7
+    groupPerm="$(convert_to_octal $groupPermString)"                                 # 5
+    worldPerm="$(convert_to_octal $worldPermString)"                                 # 5
+    echo "$userPerm$groupPerm$worldPerm"
+}
+
 theme() {
     path="$1/$2" # system/app
     cd "$vrRoot/$path"
@@ -75,8 +95,15 @@ theme() {
                 [ "$SYSTEMLESS" -eq "1" ] && mkdir -p "$vrTarget/$(friendlyname $f)" || mkdir -p "$vrBackupStaging/$path/$(friendlyname $f)"
             fi
 
+            # Get original UID, GID, permissions, and SELinux context
+            appUid="$(ls -l $origPath | awk 'NR==1 {print $3}')"
+            appGid="$(ls -l $origPath | awk 'NR==1 {print $4}')"
+            appPerms="$(get_octal_perms $origPath)"
+            [ "$lsContextSupported" -eq "1" ] && appContext="$(ls -Z $origPath | tr -s ' ' ' ' | cut -f2 -d' ')" || appContext='u:object_r:system_file:s0'
+            [ "$themeDebug" -eq "1" ] && echo "$vrOut $appUid $appGid $appPerms '$appContext'" >> $vrBackupStaging/contexts.list
+
             # Copy APK and backup if not systemless
-            cp "$origPath" "$vrApp"
+            cp -c "$origPath" "$vrApp"
             [ "$SYSTEMLESS" -eq "0" ] && cp "$origPath" "$vrBackupStaging/$origPath"
 
             # Delete files in APK, if any
@@ -96,9 +123,9 @@ theme() {
             [ "$2" == "samsung-framework-res" ] && checkdex "framework@$2" "$f" || checkdex "$2" "$f"
 
             # Finish up
-            cp -f "$vrRoot/apply/$appPath" "$vrTarget/$appPath"
-            chown 0:0 "$vrTarget/$appPath"
-            chmod 644 "$vrTarget/$appPath"
+            [ "$ART" -eq "1" ] && vrOut="$vrTarget/$(friendlyname $f)/$f" || vrOut="$vrTarget/$f"
+            cp -f "$vrRoot/apply/$appPath" "$vrOut"
+            set_perm $appUid $appGid $appPerms "$vrOut" "$appContext"
             cd "$vrRoot/$path"
         else
             ui_print " !! $origPath does not exist, skipping"
