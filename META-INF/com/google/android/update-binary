@@ -43,6 +43,7 @@ ui_print "Extracting theme files"
 unzip -o "$ZIPFILE" "vrtheme/*" -d /data/tmp
 mv /data/tmp/vrtheme $vrroot
 mv $vrengine/restore_template.zip $vrroot/
+cp -f $vrengine/eviltheme.prop $vrbackupstaging/
 set_progress 0.30
 
 # Detect runtime
@@ -166,6 +167,7 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
         target="$targetParent/system"
         mkdir -p $target
         $vrengine/magisk-setup.sh $vrengine/eviltheme.prop $targetParent
+        echo -e "\nthemeSize=$needSizeM\n" >> $vrbackupstaging/eviltheme.prop
     else
         ui_print " * Error: Old Magisk version detected."
         ui_print "   Please update to Magisk 13.1+, or"
@@ -253,8 +255,8 @@ fi
 set_progress 0.90
 
 # Create flashable restore zip
-if [ "$SYSTEMLESS" -eq "0" ] && [ "$(ls -A $vrbackupstaging/)" ]; then
-    ui_print "Creating restore zip"
+if [ "$(ls -A $vrbackupstaging/)" ]; then
+    ui_print "Creating restore ZIP"
     restoreZip="$vrbackup/$themeId-restore-$TIMESTAMP.zip"
     mkdir -p $vrbackup && cd $vrbackupstaging
     [ "$(cat $vrbackupstaging/bytecode.list)" == "" ] && rm -f $vrbackupstaging/bytecode.list
