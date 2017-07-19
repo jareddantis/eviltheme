@@ -49,7 +49,7 @@ set_progress 0.30
 # Detect runtime
 [ "$(ls -A $vrroot/)" ] && HASTHEMEFILES=1
 if [ "$HASTHEMEFILES" -eq "1" ]; then
-    echo '' > $vrbackupstaging/bytecode.list
+    echo -n '' > $vrbackupstaging/bytecode.list
     test -f /system/system/build.prop && root="/system"
     platformString=`cat $root/system/build.prop | grep "^ro.build.version.release=" | cut -d"=" -f2 | tr -d '\r '`
     platform=`echo "$platformString" | cut -d. -f1`
@@ -215,7 +215,7 @@ fi
 
 # Extract new files
 ui_print "Installing new files"
-echo '' > $vrbackupstaging/delete.list
+echo -n '' > $vrbackupstaging/delete.list
 unzip -o "$ZIPFILE" 'data/*' -d "/"
 for f in $(list_new_datafiles $ZIPFILE); do
     echo "/$f" >> $vrbackupstaging/delete.list
