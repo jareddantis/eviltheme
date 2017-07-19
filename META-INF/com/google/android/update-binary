@@ -36,32 +36,26 @@ mount /data
 mount /preload
 set_progress 0.10
 
-# Create working directories
-mkdir -p "$vrRoot/apply"
-mkdir -p "$vrBackupStaging"
-
 # Extract theme files
 ui_print "Extracting theme files"
 unzip -o "$ZIPFILE" "vrtheme/*" -d /data/tmp
 mv /data/tmp/vrtheme $vrRoot
 mv $vrEngine/restore_template.zip $vrRoot/
-cp -f $vrEngine/eviltheme.prop $vrBackupStaging/
+mkdir -p "$vrRoot/apply"
+mkdir -p "$vrBackupStaging" && cp -f $vrEngine/eviltheme.prop $vrBackupStaging/
 set_progress 0.30
 
 # Detect runtime
-[ "$(ls -A $vrRoot/)" ] && HASTHEMEFILES=1
-if [ "$HASTHEMEFILES" -eq "1" ]; then
-    echo -n '' > $vrBackupStaging/bytecode.list
-    test -f /system/system/build.prop && ROOT="/system"
-    platformString=`cat $ROOT/system/build.prop | grep "^ro.build.version.release=" | cut -d"=" -f2 | tr -d '\r '`
-    platform=`echo "$platformString" | cut -d. -f1`
-    if [ "$platform" -ge "5" ]; then
-        ART=1
-        ui_print "Detected ART runtime"
-    else
-        ui_print "Detected Dalvik runtime"
-        mount /cache
-    fi
+echo -n '' > $vrBackupStaging/bytecode.list
+test -f /system/system/build.prop && ROOT="/system"
+platformString=`cat $ROOT/system/build.prop | grep "^ro.build.version.release=" | cut -d"=" -f2 | tr -d '\r '`
+platform=`echo "$platformString" | cut -d. -f1`
+if [ "$platform" -ge "5" ]; then
+    ART=1
+    ui_print "Detected ART runtime"
+else
+    ui_print "Detected Dalvik runtime"
+    mount /cache
 fi
 
 # Systemless installation detection
@@ -172,32 +166,34 @@ set_progress 0.40
 if [ -e "$vrRoot/delete.list" ]; then
     ui_print "Removing files"
     while IFS='' read item; do
-        ui_print " => $item"
-        filePath="$(dirname $item)"
-        fileRoot="$(echo $filePath | cut -f2 -d/)"
-        if [ "$SYSTEMLESS" -eq "1" ] && [ "$fileRoot" == "system" ]; then
-            # Replace file with empty folder
-            # so Magisk can overwrite it by mounting
-            filePath="$target/$(echo $filePath | sed 's~/system~~g')"
-            mkdir -p "$filePath"
-            touch "$filePath/.replace"
-        else
-            # Allow backup deferring
-            deleteParam="$(echo $item | grep -oE '[^ ]+$')"
-            if [ "$deleteParam" == "no-backup" ]; then
-                [ "$fileRoot" == "system" ] && rm -fr "$ROOT/$item" || rm -fr $item
+        if [ -e "$item" ]; then
+            ui_print " => $item"
+            filePath="$(dirname $item)"
+            fileRoot="$(echo $filePath | cut -f2 -d/)"
+            if [ "$SYSTEMLESS" -eq "1" ] && [ "$fileRoot" == "system" ]; then
+                # Replace file with empty folder
+                # so Magisk can overwrite it by mounting
+                filePath="$target/$(echo $filePath | sed 's~/system~~g')"
+                mkdir -p "$filePath"
+                touch "$filePath/.replace"
             else
-                # Move file to backup path
-                backupPath="$vrBackupStaging/$filePath"
-                mkdir -p "$backupPath"
-                mv "$item" "$backupPath/"
+                # Allow backup deferring
+                deleteParam="$(echo $item | grep -oE '[^ ]+$')"
+                if [ "$deleteParam" == "no-backup" ]; then
+                    [ "$fileRoot" == "system" ] && rm -fr "$ROOT/$item" || rm -fr $item
+                else
+                    # Move file to backup path
+                    backupPath="$vrBackupStaging/$filePath"
+                    mkdir -p "$backupPath"
+                    mv "$item" "$backupPath/"
+                fi
             fi
         fi
     done < "$vrRoot/delete.list"
 fi
 
 # Extract new files
-ui_print "Installing new files"
+ui_print "Extracting new files"
 echo -n '' > $vrBackupStaging/delete.list
 unzip -o "$ZIPFILE" 'data/*' -d "/"
 for f in $(list_new_datafiles $ZIPFILE); do echo "/$f" >> $vrBackupStaging/delete.list; done
@@ -223,8 +219,9 @@ else
 fi
 
 # Start theming
-if [ "$HASTHEMEFILES" -eq "1" ]; then
+if [ -d "$vrRoot/system" -o -d "$vrRoot/preload" ]; then
     ui_print "Applying theme"
+    [ -z "$(ls -Z /init.rc 2>&1 | grep 'illegal')" ] && lsContextSupported=1
     [ -d "$vrRoot/system/app" ] && theme "system" "app"
     [ -d "$vrRoot/system/priv-app" ] && theme "system" "priv-app"
     [ -d "$vrRoot/preload/symlink/system/app" ] && theme "preload/symlink/system" "app"
@@ -233,18 +230,8 @@ if [ "$HASTHEMEFILES" -eq "1" ]; then
     set_progress 0.80
 fi
 
-# Set permissions
-ui_print "Setting permissions"
-if [ "$HASTHEMEFILES" -eq "1" ]; then
-    [ -d "$vrRoot/system/app" ] && set_perm_recursive 0 0 0755 0644 "$target/app"
-    [ -d "$vrRoot/system/priv-app" ] && set_perm_recursive 0 0 0755 0644 "$target/priv-app"
-    [ -d "$vrRoot/preload/symlink/system/app" ] && set_perm_recursive 0 0 0755 0644 "/preload/symlink/system/app"
-    [ -d "$vrRoot/system/framework" ] && set_perm_recursive 0 0 0755 0644 "$target/framework"
-    [ -d "$vrRoot/system/framework/samsung-framework-res" ] && set_perm_recursive 0 0 0755 0644 "$target/framework/samsung-framework-res"
-fi
-
 # Execute custom script
-[ -f "$vrEngine/post-install.sh" ] && $vrEngine/post-install.sh "$vrEngine/recovery-utils.sh" "$ZIPFILE" "$target" "$vrBackupStaging"
+[ -f "$vrEngine/post-install.sh" ] && $vrEngine/post-install.sh "$vrEngine/recovery-utils.sh" "$2" "$ZIPFILE" "$target" "$vrBackupStaging"
 set_progress 0.90
 
 # Create flashable restore zip
@@ -267,7 +254,7 @@ if [ "$(ls -A $vrBackupStaging/)" ]; then
 fi
 
 # Cleanup
-cleanup
+[ "$themeDebug" -eq "1" ] || cleanup
 set_progress 1.00
 
 # Goodbye

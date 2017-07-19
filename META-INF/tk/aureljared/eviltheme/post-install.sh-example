@@ -1,9 +1,10 @@
 #!/sbin/sh
 . "$1"              # Inherit recovery utils
-ZIPFILE="$2"        # Path to theme ZIP file
-TARGET="$3"         # Path to /system (not systemless),
+ZIPFILE="$3"        # Path to theme ZIP file
+TARGET="$4"         # Path to /system (not systemless),
                     # /system/system (not systemless, A/B system partition), or
                     # /magisk/<theme-id>/system (systemless)
+BACKUPDIR="$5"      # Path to app backup folder
 
 ###############################################################################
 # Remember to rename this file as post-install.sh if you are going to use it! #
