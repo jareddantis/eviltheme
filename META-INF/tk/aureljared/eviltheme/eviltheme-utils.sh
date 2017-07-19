@@ -4,14 +4,15 @@
 
 cleanup() {
     ui_print "Cleaning up and unmounting filesystems"
-    rm -rf $vrroot $vrbackupstaging
+    rm -rf $vrRoot $vrBackupStaging
     [ "$SYSTEMLESS" -eq "1" ] && umount $sumnt
-    [ "$art" -eq "0" ] && umount /cache
+    [ "$ART" -eq "0" ] && umount /cache
     umount /system
     umount /data
     umount /preload
 }
 
+# These were too long to look clean in update-binary
 list_new_sysfiles() {
     echo "$(unzip -l $1 'system/*' | tr -s ' ' ' ' | sed 1,3d | head -n -2 | grep -v "^ 0" | cut -f5 -d' ')"
 }
@@ -25,101 +26,83 @@ friendlyname() {
     echo "$tempvar"
 }
 
-theme_app(){
+# Delete
+checkdex_dalvik() {
+    if [ -e ./classes.dex ]; then
+        echo "system@$1@$2" >> $vrBackupStaging/bytecode.list
+        rm -f "/data/dalvik-cache/system@$1@$2@classes.dex"
+        rm -f "/cache/dalvik-cache/system@$1@$2@classes.dex"
+    fi
+}
+checkdex_art() {
+    appname=$(friendlyname "$2")
+    if [ -e ./classes.dex ] || [ -e ./classes.art ]; then
+        echo "system@$1@$appname@$2" >> $vrBackupStaging/bytecode.list
+        rm -f "/data/dalvik-cache/arm/system@$1@$appname@$2@classes.dex"
+        rm -f "/data/dalvik-cache/arm64/system@$1@$appname@$2@classes.dex"
+        rm -f "/data/dalvik-cache/arm/system@$1@$appname@$2@classes.art"
+        rm -f "/data/dalvik-cache/arm64/system@$1@$appname@$2@classes.art"
+    fi
+}
+checkdex() {
+    # checkdex <subfolder in /system> <apk filename>
+    [ "$ART" -eq "1" ] && checkdex_art "$@" || checkdex_dalvik "$@"
+}
+
+theme() {
     path="$1/$2" # system/app
+    cd "$vrRoot/$path"
 
-    # Do not put preload files in Magisk image
-    foldername="$(echo $1 | cut -f1 -d/)"
-    [ "$foldername" == "preload" ] && vrout="/$path" || vrout="$target/$2"
-    mkdir -p "$vrout"
-
-    cd "$vrroot/$path/"
-    mkdir -p "$vrbackupstaging/$path"
-    mkdir -p "$vrroot/apply/$path"
+    # Create working directories:                  /preload/...      or /magisk/<theme-id>/system/app or (/system)/system/app
+    [ "$(echo $1 | cut -f1 -d/)" == "preload" ] && vrTarget="/$path" || vrTarget="$target/$2"
+    mkdir -p "$vrTarget"
+    mkdir -p "$vrBackupStaging/$path"
+    mkdir -p "$vrRoot/apply/$path"
 
     for f in *.apk; do
-        cd "$f"
-        ui_print " => /$path/$f"
+        # Set app paths
+        [ "$ART" -eq "1" ] && appPath="$path/$(friendlyname $f)/$f" || appPath="$path/$f"     #  system/app/(Browser/)Browser.apk
+        [ "$foldername" == "system" ] && origPath="$ROOT/$appPath" || origPath="/$appPath"    # (/system)/system/app/(Browser/)Browser.apk
 
-        # Backup APK
-        if [ "$art" -eq "1" ]; then
-            appPath="$(friendlyname $f)/$f"
-            mkdir -p "$vrroot/apply/$path/$(friendlyname $f)"
-            cp "/$path/$appPath" "$vrroot/apply/$path/$(friendlyname $f)/"
-            if [ "$SYSTEMLESS" -eq "0" ]; then
-                mkdir -p "$vrbackupstaging/$path/$(friendlyname $f)"
-                cp "/$path/$appPath" "$vrbackupstaging/$path/$(friendlyname $f)/"
+        # Check if app exists in device
+        if [ -f "$origPath" ]; then
+            ui_print " => $origPath"
+            vrApp="$vrRoot/apply/$appPath.zip"                                                # /data/tmp/eviltheme/apply/system/app/(Browser/)Browser.apk.zip
+
+            # Create app subfolders (ex. Browser/Browser.apk)
+            if [ "$ART" -eq "1" ]; then
+                mkdir -p "$vrRoot/apply/$path/$(friendlyname $f)"
+                [ "$SYSTEMLESS" -eq "1" ] && mkdir -p "$vrTarget/$(friendlyname $f)" || mkdir -p "$vrBackupStaging/$path/$(friendlyname $f)"
             fi
+
+            # Copy APK and backup if not systemless
+            cp "$origPath" "$vrApp"
+            [ "$SYSTEMLESS" -eq "0" ] && cp "$origPath" "$vrBackupStaging/$origPath"
+
+            # Delete files in APK, if any
+            cd "$f"
+            if [ -e "./delete.list" ]; then
+                while IFS='' read item; do
+                    $vrEngine/zip -d "$vrApp" "$item"
+                done < ./delete.list
+                rm -f ./delete.list
+            fi
+
+            # Theme APK
+            $vrEngine/zip -r "$vrApp" ./*
+            mv "$vrApp" "$vrRoot/apply/$appPath"
+
+            # Refresh bytecode if necessary
+            [ "$2" == "samsung-framework-res" ] && checkdex "framework@$2" "$f" || checkdex "$2" "$f"
+
+            # Finish up
+            cp -f "$vrRoot/apply/$appPath" "$vrTarget/$appPath"
+            chown 0:0 "$vrTarget/$appPath"
+            chmod 644 "$vrTarget/$appPath"
+            cd "$vrRoot/$path"
         else
-            [ "$SYSTEMLESS" -eq "0" ] && cp "/$path/$f" "$vrbackupstaging/$path/"
-            cp "/$path/$f" "$vrroot/apply/$path/"
-            appPath="$f"
+            ui_print " !! $origPath does not exist, skipping"
         fi
-
-        # Delete files in APK, if any
-        mv "$vrroot/apply/$path/$appPath" "$vrroot/apply/$path/$appPath.zip"
-        if [ -e "./delete.list" ]; then
-            while IFS='' read item; do
-                $vrengine/zip -d "$vrroot/apply/$path/$appPath.zip" "$item"
-            done < ./delete.list
-            rm -f ./delete.list
-        fi
-
-        # Theme APK
-        $vrengine/zip -r "$vrroot/apply/$path/$appPath.zip" ./*
-        mv "$vrroot/apply/$path/$appPath.zip" "$vrroot/apply/$path/$appPath"
-
-        # Refresh bytecode if necessary
-        checkdex "$2" "$f"
-
-        # Finish up
-        [ "$SYSTEMLESS" -eq "1" ] && mkdir -p "$vrout/$(friendlyname $f)"
-        cp -f "$vrroot/apply/$path/$appPath" "$vrout/$appPath"
-        chown 0:0 "$vrout/$appPath"
-        chmod 644 "$vrout/$appPath"
-        cd "$vrroot/$path/"
     done
 }
 
-theme_framework(){
-    path="$1/$2" # system/framework
-    vrout="$target/$2"
-    mkdir -p "$vrout"
-
-    cd "$vrroot/$path/"
-    mkdir -p "$vrbackupstaging/$path"
-    mkdir -p "$vrroot/apply/$path"
-
-    for f in *.apk; do
-        cd "$f"
-        ui_print " => /$path/$f"
-
-        # Backup APK
-        [ "$SYSTEMLESS" -eq "0" ] && cp "/$path/$f" "$vrbackupstaging/$path/"
-        cp "/$path/$f" "$vrroot/apply/$path/"
-        appPath="$f"
-
-        # Delete files in APK, if any
-        mv "$vrroot/apply/$path/$appPath" "$vrroot/apply/$path/$appPath.zip"
-        if [ -e "./delete.list" ]; then
-            while IFS='' read item; do
-                $vrengine/zip -d "$vrroot/apply/$path/$appPath.zip" "$item"
-            done < ./delete.list
-            rm -f ./delete.list
-        fi
-
-        # Theme APK
-        $vrengine/zip -r "$vrroot/apply/$path/$appPath.zip" ./*
-        mv "$vrroot/apply/$path/$appPath.zip" "$vrroot/apply/$path/$appPath"
-
-        # Refresh bytecode if necessary
-        [ "$2" == "samsung-framework-res" ] && checkdex "framework@$2" "$f" || checkdex "$2" "$f"
-
-        # Finish up
-        [ "$SYSTEMLESS" -eq "1" ] && mkdir -p "$vrout/$(friendlyname $f)"
-        cp -f "$vrroot/apply/$path/$appPath" "$vrout/$appPath"
-        chown 0:0 "$vrout/$appPath"
-        chmod 644 "$vrout/$appPath"
-        cd "$vrroot/$path/"
-    done
-}

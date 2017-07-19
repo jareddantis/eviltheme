@@ -2,29 +2,31 @@
 # Eviltheme by Jared Dantis (@aureljared)
 # Licensed under GPL v3
 # https://github.com/aureljared/eviltheme
-version="3.0.0"
-vrroot="/data/tmp/eviltheme"
-vrbackupstaging="/data/tmp/evt-backup"
-vrbackup="/data/eviltheme-backup"
-vrengine="/tmp/eviltheme"
+vrVersion="3.0.0-beta2"
+vrRoot="/data/tmp/eviltheme"                      # Extracted theme files location
+vrBackupStaging="/data/tmp/eviltheme-backup"      # Backup files location
+vrBackup="/data/eviltheme-backup"                 # Restore ZIP location
+vrEngine="/tmp/eviltheme"                         # Engine files location
 
-SYSTEMLESS=0
 TIMESTAMP=$(date +"%m%d%y-%H%M%S")
+ROOT=
+ART=0
+SYSTEMLESS=0
 ZIPFILE="$3"
 
 # Extract engine files
-rm -rf $vrroot $vrbackupstaging $vrengine && mkdir $vrengine
-unzip -o "$ZIPFILE" "META-INF/tk/aureljared/*" "eviltheme.prop" -d $vrengine
-find "$vrengine/META-INF/tk/aureljared/eviltheme" -type f -exec mv {} "$vrengine/" \;
-chmod -R 0755 $vrengine/*
-. $vrengine/recovery-utils.sh
-. $vrengine/eviltheme-utils.sh
-. $vrengine/eviltheme.prop
+rm -rf $vrRoot $vrBackupStaging $vrEngine && mkdir $vrEngine
+unzip -o "$ZIPFILE" "META-INF/tk/aureljared/*" "eviltheme.prop" -d $vrEngine
+find "$vrEngine/META-INF/tk/aureljared/eviltheme" -type f -exec mv {} "$vrEngine/" \;
+chmod -R 0755 $vrEngine/*
+. $vrEngine/recovery-utils.sh
+. $vrEngine/eviltheme-utils.sh
+. $vrEngine/eviltheme.prop
 
 # Please don't remove this, thanks!
 themeIntro
 ui_print "--------------------------------"
-ui_print " Eviltheme $version by @aureljared"
+ui_print " Eviltheme $vrVersion by @aureljared"
 ui_print "--------------------------------"
 
 # Mount filesystems
@@ -35,49 +37,30 @@ mount /preload
 set_progress 0.10
 
 # Create working directories
-mkdir -p "$vrroot/apply"
-mkdir -p "$vrbackupstaging"
+mkdir -p "$vrRoot/apply"
+mkdir -p "$vrBackupStaging"
 
 # Extract theme files
 ui_print "Extracting theme files"
 unzip -o "$ZIPFILE" "vrtheme/*" -d /data/tmp
-mv /data/tmp/vrtheme $vrroot
-mv $vrengine/restore_template.zip $vrroot/
-cp -f $vrengine/eviltheme.prop $vrbackupstaging/
+mv /data/tmp/vrtheme $vrRoot
+mv $vrEngine/restore_template.zip $vrRoot/
+cp -f $vrEngine/eviltheme.prop $vrBackupStaging/
 set_progress 0.30
 
 # Detect runtime
-[ "$(ls -A $vrroot/)" ] && HASTHEMEFILES=1
+[ "$(ls -A $vrRoot/)" ] && HASTHEMEFILES=1
 if [ "$HASTHEMEFILES" -eq "1" ]; then
-    echo -n '' > $vrbackupstaging/bytecode.list
-    test -f /system/system/build.prop && root="/system"
-    platformString=`cat $root/system/build.prop | grep "^ro.build.version.release=" | cut -d"=" -f2 | tr -d '\r '`
+    echo -n '' > $vrBackupStaging/bytecode.list
+    test -f /system/system/build.prop && ROOT="/system"
+    platformString=`cat $ROOT/system/build.prop | grep "^ro.build.version.release=" | cut -d"=" -f2 | tr -d '\r '`
     platform=`echo "$platformString" | cut -d. -f1`
     if [ "$platform" -ge "5" ]; then
-        art=1
+        ART=1
         ui_print "Detected ART runtime"
-        checkdex() {
-            appname=$(friendlyname "$2")
-            if [ -e ./classes.dex ] || [ -e ./classes.art ]; then
-                [ "$root" == "/system" ] && rootDir="system@system" || rootDir="system"
-                echo "$rootDir@$1@$appname@$2" >> $vrbackupstaging/bytecode.list
-                rm -f "/data/dalvik-cache/arm/$rootdir@$1@$appname@$2@classes.dex"
-                rm -f "/data/dalvik-cache/arm64/$rootdir@$1@$appname@$2@classes.dex"
-                rm -f "/data/dalvik-cache/arm/$rootdir@$1@$appname@$2@classes.art"
-                rm -f "/data/dalvik-cache/arm64/$rootdir@$1@$appname@$2@classes.art"
-            fi
-        }
     else
-        art=0
         ui_print "Detected Dalvik runtime"
         mount /cache
-        checkdex() {
-            if [ -e ./classes.dex ]; then
-                echo "system@$1@$2" >> $vrbackupstaging/bytecode.list
-                rm -f "/data/dalvik-cache/system@$1@$2@classes.dex"
-                rm -f "/cache/dalvik-cache/system@$1@$2@classes.dex"
-            fi
-        }
     fi
 fi
 
@@ -105,13 +88,13 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
 
         # Calculate size of themed apps
         needAppSizeK=0
-        find $vrroot/system -name '*.apk' 2>/dev/null | while read f; do
-            if [ "$art" -eq "1" ]; then
+        find $vrRoot/system -name '*.apk' 2>/dev/null | while read f; do
+            if [ "$ART" -eq "1" ]; then
                 apkFile=$(echo $f | grep -o '[^/]*$')
                 newRoot="${root}system"
-                apkPath="$(echo $f | sed "s~${vrroot}~~g" | sed "s~/system~${newRoot}~g" | sed 's/.apk//g')/$apkFile"
+                apkPath="$(echo $f | sed "s~${vrRoot}~~g" | sed "s~/system~${newRoot}~g" | sed 's/.apk//g')/$apkFile"
             else
-                apkPath=$(echo $f | sed "s~${vrroot}~~g" | sed "s~/system~${root}system~g")
+                apkPath=$(echo $f | sed "s~${vrRoot}~~g" | sed "s~/system~${root}system~g")
             fi
             sizeK=$(du -sk $apkPath | cut -f1)
             needAppSizeK=$((sizeK + needAppSizeK))
@@ -166,8 +149,8 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
         targetParent="$sumnt/$themeId"
         target="$targetParent/system"
         mkdir -p $target
-        $vrengine/magisk-setup.sh $vrengine/eviltheme.prop $targetParent
-        echo -e "\nthemeSize=$needSizeM\n" >> $vrbackupstaging/eviltheme.prop
+        $vrEngine/magisk-setup.sh $vrEngine/eviltheme.prop $targetParent
+        echo -e "\nthemeSize=$needSizeM\n" >> $vrBackupStaging/eviltheme.prop
     else
         ui_print " * Error: Old Magisk version detected."
         ui_print "   Please update to Magisk 13.1+, or"
@@ -181,12 +164,12 @@ else
     ui_print "Installing in system mode"
     mount -o rw,remount /system
     mount /system
-    target="$root/system"
+    target="$ROOT/system"
 fi
 set_progress 0.40
 
 # Remove specified files, if any
-if [ -e "$vrroot/delete.list" ]; then
+if [ -e "$vrRoot/delete.list" ]; then
     ui_print "Removing files"
     while IFS='' read item; do
         ui_print " => $item"
@@ -202,24 +185,22 @@ if [ -e "$vrroot/delete.list" ]; then
             # Allow backup deferring
             deleteParam="$(echo $item | grep -oE '[^ ]+$')"
             if [ "$deleteParam" == "no-backup" ]; then
-                [ "$fileRoot" == "system" ] && rm -fr "$root/$item" || rm -fr $item
+                [ "$fileRoot" == "system" ] && rm -fr "$ROOT/$item" || rm -fr $item
             else
                 # Move file to backup path
-                backupPath="$vrbackupstaging/$filePath"
+                backupPath="$vrBackupStaging/$filePath"
                 mkdir -p "$backupPath"
                 mv "$item" "$backupPath/"
             fi
         fi
-    done < "$vrroot/delete.list"
+    done < "$vrRoot/delete.list"
 fi
 
 # Extract new files
 ui_print "Installing new files"
-echo -n '' > $vrbackupstaging/delete.list
+echo -n '' > $vrBackupStaging/delete.list
 unzip -o "$ZIPFILE" 'data/*' -d "/"
-for f in $(list_new_datafiles $ZIPFILE); do
-    echo "/$f" >> $vrbackupstaging/delete.list
-done
+for f in $(list_new_datafiles $ZIPFILE); do echo "/$f" >> $vrBackupStaging/delete.list; done
 if [ "$SYSTEMLESS" -eq "1" ]; then
     # No need to handle /system backups for systemless
     # as the module itself can simply be removed
@@ -227,62 +208,61 @@ if [ "$SYSTEMLESS" -eq "1" ]; then
 else
     for f in $(list_new_sysfiles $ZIPFILE); do
         # Add file to delete.list in restore zip
-        [ "$root" == "/system" ] && fileName="/$root/$f" || fileName="/$f"
-        echo "$fileName" >> $vrbackupstaging/delete.list
+        [ ! -z "$ROOT" ] && fileName="/$ROOT/$f" || fileName="/$f"
+        echo "$fileName" >> $vrBackupStaging/delete.list
 
         # Check if file exists
-        if [ -e "/$root/$f" ]; then
+        if [ -e "/$ROOT/$f" ]; then
             # File exists, copy existing file to backup folder
-            fileDir="$vrbackupstaging/$(dirname /$root/$f)"
+            fileDir="$vrBackupStaging/$(dirname /$ROOT/$f)"
             mkdir -p $fileDir
-            cp -fp "/$root/$f" "$fileDir/"
+            cp -fp "/$ROOT/$f" "$fileDir/"
         fi
     done
-    unzip -o "$ZIPFILE" 'system/*' -d "/$root"
+    unzip -o "$ZIPFILE" 'system/*' -d "/$ROOT"
 fi
 
 # Start theming
 if [ "$HASTHEMEFILES" -eq "1" ]; then
     ui_print "Applying theme"
-    [ -d "$vrroot/system/app" ] && theme_app "system" "app"
-    [ -d "$vrroot/system/priv-app" ] && theme_app "system" "priv-app"
-    [ -d "$vrroot/preload/symlink/system/app" ] && theme_app "preload/symlink/system" "app"
-    [ -d "$vrroot/system/framework" ] && theme_framework "system" "framework"
-    [ -d "$vrroot/system/framework/samsung-framework-res" ] && theme_framework "system/framework" "samsung-framework-res"
+    [ -d "$vrRoot/system/app" ] && theme "system" "app"
+    [ -d "$vrRoot/system/priv-app" ] && theme "system" "priv-app"
+    [ -d "$vrRoot/preload/symlink/system/app" ] && theme "preload/symlink/system" "app"
+    [ -d "$vrRoot/system/framework" ] && theme "system" "framework"
+    [ -d "$vrRoot/system/framework/samsung-framework-res" ] && theme "system/framework" "samsung-framework-res"
     set_progress 0.80
 fi
 
 # Set permissions
 ui_print "Setting permissions"
 if [ "$HASTHEMEFILES" -eq "1" ]; then
-    [ "$SYSTEMLESS" -eq "1" ] && rootDir="$targetParent" || rootDir="$root"
-    [ -d "$vrroot/system/app" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/app"
-    [ -d "$vrroot/system/priv-app" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/priv-app"
-    [ -d "$vrroot/preload/symlink/system/app" ] && set_perm_recursive 0 0 0755 0644 "/preload/symlink/system/app"
-    [ -d "$vrroot/system/framework" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/framework"
-    [ -d "$vrroot/system/framework/samsung-framework-res" ] && set_perm_recursive 0 0 0755 0644 "$rootDir/system/framework/samsung-framework-res"
+    [ -d "$vrRoot/system/app" ] && set_perm_recursive 0 0 0755 0644 "$target/app"
+    [ -d "$vrRoot/system/priv-app" ] && set_perm_recursive 0 0 0755 0644 "$target/priv-app"
+    [ -d "$vrRoot/preload/symlink/system/app" ] && set_perm_recursive 0 0 0755 0644 "/preload/symlink/system/app"
+    [ -d "$vrRoot/system/framework" ] && set_perm_recursive 0 0 0755 0644 "$target/framework"
+    [ -d "$vrRoot/system/framework/samsung-framework-res" ] && set_perm_recursive 0 0 0755 0644 "$target/framework/samsung-framework-res"
 fi
 
 # Execute custom script
-[ -f "$vrengine/post-install.sh" ] && $vrengine/post-install.sh "$vrengine/recovery-utils.sh" "$ZIPFILE" "$target" "$vrbackupstaging"
+[ -f "$vrEngine/post-install.sh" ] && $vrEngine/post-install.sh "$vrEngine/recovery-utils.sh" "$ZIPFILE" "$target" "$vrBackupStaging"
 set_progress 0.90
 
 # Create flashable restore zip
-if [ "$(ls -A $vrbackupstaging/)" ]; then
+if [ "$(ls -A $vrBackupStaging/)" ]; then
     ui_print "Creating restore ZIP"
-    restoreZip="$vrbackup/$themeId-restore-$TIMESTAMP.zip"
+    restoreZip="$vrBackup/$themeId-restore-$TIMESTAMP.zip"
 
     # Delete empty lists
-    [ -z "$(cat $vrbackupstaging/bytecode.list)" ] && rm -f $vrbackupstaging/bytecode.list
-    [ -z "$(cat $vrbackupstaging/delete.list)" ] && rm -f $vrbackupstaging/delete.list
+    [ -z "$(cat $vrBackupStaging/bytecode.list)" ] && rm -f $vrBackupStaging/bytecode.list
+    [ -z "$(cat $vrBackupStaging/delete.list)" ] && rm -f $vrBackupStaging/delete.list
 
     # Copy post uninstallation script
-    [ -f "$vrengine/post-uninstall.sh" ] && cp -f "$vrengine/post-uninstall.sh" "$vrbackupstaging/"
+    [ -f "$vrEngine/post-uninstall.sh" ] && cp -f "$vrEngine/post-uninstall.sh" "$vrBackupStaging/"
 
     # Create zip
-    mkdir -p $vrbackup && cd $vrbackupstaging
-    $vrengine/zip -r9 "$vrroot/restore_template.zip" .
-    mv "$vrroot/restore_template.zip" "$restoreZip"
+    mkdir -p $vrBackup && cd $vrBackupStaging
+    $vrEngine/zip -r9 "$vrRoot/restore_template.zip" .
+    mv "$vrRoot/restore_template.zip" "$restoreZip"
     set_progress 0.95
 fi
 
