@@ -11,7 +11,6 @@ vrengine="/tmp/eviltheme"
 SYSTEMLESS=0
 TIMESTAMP=$(date +"%m%d%y-%H%M%S")
 ZIPFILE="$3"
-MAGISKBIN="/data/magisk"
 
 # Extract engine files
 rm -rf $vrroot $vrbackupstaging $vrengine && mkdir $vrengine
@@ -84,11 +83,12 @@ fi
 # Systemless installation detection
 suimg=$(ls /data/magisk.img || ls /cache/magisk.img) 2>/dev/null
 if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
-    ui_print "Installing in systemless mode"
+    MAGISKBIN="$(echo $suimg | sed 's~.img~~g')"
+    ui_print "Attempting systemless mode"
 
     # Check for Magisk 13.1+
     ui_print "Analyzing Magisk installation"
-    [ -d $MAGISKBIN -a -f $MAGISKBIN/magisk -a -f $MAGISKBIN/util_functions.sh ] && oldMagisk=0 || oldMagisk=1
+    [ -d "$MAGISKBIN" -a -f "$MAGISKBIN/magisk" -a -f "$MAGISKBIN/util_functions.sh" ] && oldMagisk=0 || oldMagisk=1
     if [ "$oldMagisk" -eq "0" ]; then
         SYSTEMLESS=1
         sumnt="/$(basename $suimg .img)"
