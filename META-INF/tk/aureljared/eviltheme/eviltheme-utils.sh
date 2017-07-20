@@ -74,16 +74,31 @@ theme() {
     [ "$cpContextSupported" -eq "1" ] && cpFlags="-afc" || cpFlags="-af"
     cd "$vrRoot/$path"
 
-    # Create working directories:                  /preload/...      or /magisk/<theme-id>/system/app or (/system)/system/app
-    [ "$(echo $1 | cut -f1 -d/)" == "preload" ] && vrTarget="/$path" || vrTarget="$target/$2"
+    # Determine output parent folder of themed app
+    rootFolder="$(echo $1 | cut -f1 -d/)"
+    if [ "$rootFolder" == "preload" ]; then
+        # /preload/symlink/system/app
+        vrTarget="/$path"
+    else
+        # $target is /magisk/<themeId>/system (systemless)  OR  (/system)/system (not systemless)
+        if [ "$2" == "samsung-framework-res" ]; then
+            # /magisk/<themeId>/system/framework/samsung-framework-res  OR  (/system)/system/framework/samsung-framework-res
+            vrTarget="$target/framework/samsung-framework-res"
+        else
+            # /magisk/<themeId>/system/app  OR  (/system)/system/app
+            vrTarget="$target/$2"
+        fi
+    fi
+
+    # Create working directories
     mkdir -p "$vrTarget"
     mkdir -p "$vrBackupStaging/$path"
     mkdir -p "$vrRoot/apply/$path"
 
     for f in *.apk; do
         # Set app paths
-        [ "$ART" -eq "1" ] && appPath="$path/$(friendlyname $f)/$f" || appPath="$path/$f"             #  system/app/(Browser/)Browser.apk
-        [ ! -z "$(echo $1 | grep 'system')" ] && origPath="$ROOT/$appPath" || origPath="/$appPath"    # (/system)/system/app/(Browser/)Browser.apk
+        [ "$ART" -eq "1" ] && appPath="$path/$(friendlyname $f)/$f" || appPath="$path/$f"     #  system/app/(Browser/)Browser.apk
+        [ "$rootFolder" == "system" ] && origPath="$ROOT/$appPath" || origPath="/$appPath"    # (/system)/system/app/(Browser/)Browser.apk
 
         # Check if app exists in device
         if [ -f "$origPath" ]; then
