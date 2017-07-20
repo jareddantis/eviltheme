@@ -167,7 +167,7 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
     # Copy Magisk module files
     mkdir -p $target
     $vrEngine/magisk-setup.sh $vrEngine/eviltheme.prop $MODDIR $magiskTemplate
-    cp -f "$vrEngine/META-INF/tk/aureljared/magisk-common/*" "$MODDIR/"
+    find "$vrEngine/META-INF/tk/aureljared/magisk-common" -type f -exec cp -af {} "$MODDIR/" \;
 
     # Store theme size in eviltheme.prop for later reference by restore ZIP
     echo -e "\nthemeSize=$needSizeM\n" >> $vrBackupStaging/eviltheme.prop
