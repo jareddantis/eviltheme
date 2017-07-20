@@ -117,7 +117,7 @@ theme() {
             else
                 appContext='u:object_r:system_file:s0'
             fi
-            [ "$themeDebug" -eq "1" ] && echo "$vrOut $appUid $appGid $appPerms '$appContext'" >> $vrBackupStaging/contexts.list
+            [ "$vrDebug" -eq "1" ] && echo "$vrOut $appUid $appGid $appPerms '$appContext'" >> $vrBackupStaging/contexts.list
 
             # Copy APK and backup if not systemless
             cp "$cpFlags" "$origPath" "$vrApp"

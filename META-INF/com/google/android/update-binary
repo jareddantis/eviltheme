@@ -15,8 +15,11 @@ ART=0
 SYSTEMLESS=0
 ZIPFILE="$3"
 
+# Check if cp or ls supports copying or listing file contexts
 cpContextSupported=0
 lsContextSupported=0
+[ -z "$(cp -c /init.rc /tmp/ 2>&1 | grep 'illegal')" ] && cpContextSupported=1
+[ -z "$(ls -Z /init.rc 2>&1 | grep 'illegal')" ] && lsContextSupported=1
 
 # Extract engine files
 rm -rf $vrRoot $vrBackupStaging $vrEngine && mkdir $vrEngine
@@ -210,15 +213,15 @@ if [ "$SYSTEMLESS" -eq "1" ]; then
 else
     for f in $(list_new_sysfiles $ZIPFILE); do
         # Add file to delete.list in restore zip
-        [ ! -z "$ROOT" ] && fileName="/$ROOT/$f" || fileName="/$f"
+        [ ! -z "$ROOT" ] && fileName="$ROOT/$f" || fileName="/$f"
         echo "$fileName" >> $vrBackupStaging/delete.list
 
         # Check if file exists
-        if [ -e "/$ROOT/$f" ]; then
+        if [ -e "$fileName" ]; then
             # File exists, copy existing file to backup folder
-            fileDir="$vrBackupStaging/$(dirname /$ROOT/$f)"
+            fileDir="$vrBackupStaging$(dirname $fileName)"
             mkdir -p $fileDir
-            cp -fp "/$ROOT/$f" "$fileDir/"
+            cp -fp "$fileName" "$fileDir/"
         fi
     done
     unzip -o "$ZIPFILE" 'system/*' -d "/$ROOT"
@@ -227,8 +230,6 @@ fi
 # Start theming
 if [ -d "$vrRoot/system" -o -d "$vrRoot/preload" ]; then
     ui_print "Applying theme"
-    [ -z "$(cp -c /init.rc /tmp/ 2>&1 | grep 'illegal')" ] && cpContextSupported=1
-    [ -z "$(ls -Z /init.rc 2>&1 | grep 'illegal')" ] && lsContextSupported=1
     [ -d "$vrRoot/system/app" ] && theme "system" "app"
     [ -d "$vrRoot/system/priv-app" ] && theme "system" "priv-app"
     [ -d "$vrRoot/preload/symlink/system/app" ] && theme "preload/symlink/system" "app"
