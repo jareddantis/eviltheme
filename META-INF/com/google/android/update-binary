@@ -208,6 +208,7 @@ if [ -e "$vrRoot/delete.list" ]; then
             fi
         fi
     done < "$vrRoot/delete.list"
+    set_progress 0.50
 fi
 
 # Extract new files
@@ -234,7 +235,12 @@ else
         fi
     done
     unzip -o "$ZIPFILE" 'system/*' -d "/$ROOT"
+    set_progress 0.60
 fi
+
+# Execute custom pre-install script
+[ -f "$vrEngine/pre-install.sh" ] && $vrEngine/pre-install.sh "$vrEngine/recovery-utils.sh" "$2" "$ZIPFILE" "$target" "$vrBackupStaging"
+set_progress 0.70
 
 # Start theming
 if [ -d "$vrRoot/system" -o -d "$vrRoot/preload" ]; then
@@ -247,7 +253,7 @@ if [ -d "$vrRoot/system" -o -d "$vrRoot/preload" ]; then
     set_progress 0.80
 fi
 
-# Execute custom script
+# Execute custom post-install script
 [ -f "$vrEngine/post-install.sh" ] && $vrEngine/post-install.sh "$vrEngine/recovery-utils.sh" "$2" "$ZIPFILE" "$target" "$vrBackupStaging"
 set_progress 0.90
 
@@ -260,8 +266,9 @@ if [ -d "$vrBackupStaging/system" ] || [ -d "$vrBackupStaging/preload" ]; then
     ui_print "Creating restore ZIP"
     restoreZip="$vrBackup/$themeId-restore-$TIMESTAMP.zip"
 
-    # Copy post uninstallation script
-    [ -f "$vrEngine/post-uninstall.sh" ] && cp -f "$vrEngine/post-uninstall.sh" "$vrBackupStaging/"
+    # Copy pre/post uninstallation scripts
+    [ -f "$vrEngine/post-uninstall.sh" ] && cp -af "$vrEngine/post-uninstall.sh" "$vrBackupStaging/"
+    [ -f "$vrEngine/pre-uninstall.sh" ] && cp -af "$vrEngine/pre-uninstall.sh" "$vrBackupStaging/"
 
     # Create zip
     mkdir -p $vrBackup && cd $vrBackupStaging

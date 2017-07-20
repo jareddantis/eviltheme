@@ -1,0 +1,25 @@
+#!/sbin/sh
+. "$1"              # Inherit recovery utils
+ZIPFILE="$3"        # Path to theme ZIP file
+TARGET="$4"         # Path to /system (not systemless),
+                    # /system/system (not systemless, A/B system partition), or
+                    # /magisk/<theme-id>/system (systemless)
+BACKUPDIR="$5"      # Path to app backup folder
+
+##############################################################################
+# Remember to rename this file as pre-install.sh if you are going to use it! #
+##############################################################################
+
+# You may execute your own pre-installation commands here.
+# In case you need any file inside the ZIP,
+# extract it like this
+#     unzip -o "$ZIPFILE" <files/folders> -d "$SYSTEM/"
+# Be aware that unzip will create the full path to the file.
+# For example, if you unzip META-INF/com/google/android/updater-script,
+# unzip will create the folders META-INF, com, google, and android.
+# Make sure you adapt accordingly.
+
+# Recovery methods such as ui_print may be used here.
+# See all defined methods in recovery-utils.sh.
+
+exit 0

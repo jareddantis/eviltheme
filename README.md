@@ -22,7 +22,9 @@ Eviltheme is based on the VRTheme Engine from 2011, though versions 3.x.x and up
 - `META-INF/tk/aureljared/eviltheme/recovery-utils.sh` - functions for recovery, like `ui_print` and `set_perm_recursive`
 - `META-INF/tk/aureljared/eviltheme/eviltheme-utils.sh` - EVilTheme functions. This is where the theming logic is defined.
 - `META-INF/tk/aureljared/eviltheme/magisk-setup.sh` - script that handles Magisk Module Template compatibility (module.prop creation)
+- `META-INF/tk/aureljared/eviltheme/pre-install.sh-example` - example pre-installation script. This script is run after extracting new files and before applying the theme.
 - `META-INF/tk/aureljared/eviltheme/post-install.sh-example` - example post-installation script. This script is run after setting permissions and before creating the restore ZIP.
+- `META-INF/tk/aureljared/eviltheme/pre-uninstall.sh-example` - example pre-uninstallation script. This script is run after mounting filesystems (except for magisk.img) and before removing any files.
 - `META-INF/tk/aureljared/eviltheme/post-uninstall.sh-example` - example post-uninstallation script. This script is run after restoring files and before wiping Dalvik cache.
 - `META-INF/tk/aureljared/magisk-common/*` - Magisk module files (`post-fs-data.sh`, `service.sh`, and `system.prop`). See [topjohnwu/magisk-module-template](https://github.com/topjohnwu/magisk-module-template)
 
@@ -35,4 +37,5 @@ Eviltheme is based on the VRTheme Engine from 2011, though versions 3.x.x and up
 - @djb77
 - @Spannaa
 - @topjohnwu
+- @osm0sis
 - The VillainROM team

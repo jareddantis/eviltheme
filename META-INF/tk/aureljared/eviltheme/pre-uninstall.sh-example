@@ -1,0 +1,37 @@
+#!/sbin/sh
+OUTFD="$1"
+TARGET="$2"         # Path to /system (not systemless) or
+                    # /system/system (not systemless, A/B system partition)
+                    # magisk.img has not been mounted yet when this script is executed
+
+################################################################################
+# Remember to rename this file as pre-uninstall.sh if you are going to use it! #
+################################################################################
+
+# Recovery methods
+ui_print() { echo "ui_print ${1} " >> $OUTFD; }
+set_perm() {
+    # Usage:
+    #   set_perm(uid, gid, mode, file, <context>)
+    chown $1:$2 $4
+    chmod $3 $4
+    if [ ! -z $5 ]; then
+        chcon $5 $4
+    else
+        chcon 'u:object_r:system_file:s0' $1
+    fi
+}
+set_perm_recursive() {
+    # Usage:
+    #   set_perm_recursive(uid, gid, folderMode, fileMode, dir, <context>)
+    find $5 -type d 2>/dev/null | while read dir; do
+        set_perm $1 $2 $3 $dir $6
+    done
+    find $5 -type f 2>/dev/null | while read file; do
+        set_perm $1 $2 $4 $file $6
+    done
+}
+
+# You may execute your own pre-uninstallation commands here.
+
+exit 0
