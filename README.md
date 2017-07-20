@@ -7,13 +7,14 @@ Eviltheme is based on the VRTheme Engine from 2011, though versions 3.x.x and up
 
 ## Features
 
-- Automatic systemless mode (Magisk v13.1+, Android 6+ required)
+- Automatic systemless mode (Magisk required, v13.1+ recommended)
 - System mode fallback in case Magisk is not present
 - Supports both Dalvik and ART platforms
 - Smart bytecode refresh (delete classes.dex/classes.art only if it is replaced by the theme)
 - Easy uninstallation via automatically generated flashable ZIP
 - Support for post-install and post-uninstall scripts
 - Delete files (even inside APKs)
+- Support for A/B (dual) system partitions
 
 ## Scripts
 
