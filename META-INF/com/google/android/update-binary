@@ -126,6 +126,14 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
         if [ "$dataFreeM" -gt "$newSizeM" ]; then
             ui_print " * Resizing to $needSizeM MB"
             resize2fs $suimg ${needSizeM}M
+
+            # Verify new size
+            newBlocks="$(e2fsck -n $suimg 2>/dev/null | grep $suimg | cut -d, -f3 | cut -d\  -f2 | cut -d/ -f2)"
+            if [ "$curBlocks" -le "$newBlocks" ]; then
+                ui_print " * Error: Resizing magisk.img failed."
+                cleanup
+                exit 1
+            fi
         else
             ui_print " * Error: /data has too little free space."
             ui_print "   To force a non-systemless installation,"
