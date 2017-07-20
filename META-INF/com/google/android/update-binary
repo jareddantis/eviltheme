@@ -2,7 +2,7 @@
 # Eviltheme by Jared Dantis (@aureljared)
 # Licensed under GPL v3
 # https://github.com/aureljared/eviltheme
-vrVersion="3.0.0-beta2"
+vrVersion="3.0.0-beta4"
 vrRoot="/data/tmp/eviltheme"                      # Extracted theme files location
 vrBackupStaging="/data/tmp/eviltheme-backup"      # Backup files location
 vrBackup="/data/eviltheme-backup"                 # Restore ZIP location
@@ -14,6 +14,9 @@ ROOT=
 ART=0
 SYSTEMLESS=0
 ZIPFILE="$3"
+
+cpContextSupported=0
+lsContextSupported=0
 
 # Extract engine files
 rm -rf $vrRoot $vrBackupStaging $vrEngine && mkdir $vrEngine
@@ -224,8 +227,8 @@ fi
 # Start theming
 if [ -d "$vrRoot/system" -o -d "$vrRoot/preload" ]; then
     ui_print "Applying theme"
-    [ -z "$(cp -c /init.rc /tmp/ 2>&1 | grep 'illegal')" ] && cpContextSupported=1 || cpContextSupported=0
-    [ -z "$(ls -Z /init.rc 2>&1 | grep 'illegal')" ] && lsContextSupported=1 || lsContextSupported=0
+    [ -z "$(cp -c /init.rc /tmp/ 2>&1 | grep 'illegal')" ] && cpContextSupported=1
+    [ -z "$(ls -Z /init.rc 2>&1 | grep 'illegal')" ] && lsContextSupported=1
     [ -d "$vrRoot/system/app" ] && theme "system" "app"
     [ -d "$vrRoot/system/priv-app" ] && theme "system" "priv-app"
     [ -d "$vrRoot/preload/symlink/system/app" ] && theme "preload/symlink/system" "app"
@@ -239,11 +242,11 @@ fi
 set_progress 0.90
 
 # Delete empty lists
-[ -z "$(cat $vrBackupStaging/bytecode.list 2>/dev/null)" ] && rm -f $vrBackupStaging/bytecode.list
-[ -z "$(cat $vrBackupStaging/delete.list 2>/dev/null)" ] && rm -f $vrBackupStaging/delete.list
+[ ! -s "$vrBackupStaging/bytecode.list" ] && rm -f $vrBackupStaging/bytecode.list
+[ ! -s "$vrBackupStaging/delete.list" ] && rm -f $vrBackupStaging/delete.list
 
 # Create flashable restore zip
-if [ "$(ls $vrBackupStaging/ | wc -l)" -ne "0" ]; then
+if [ -d "$vrBackupStaging/system" ] || [ -d "$vrBackupStaging/preload" ]; then
     ui_print "Creating restore ZIP"
     restoreZip="$vrBackup/$themeId-restore-$TIMESTAMP.zip"
 
