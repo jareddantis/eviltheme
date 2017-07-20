@@ -165,7 +165,7 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
     target="$MODDIR/system"
 
     # Copy Magisk module files
-    mkdir -p $target
+    rm -fr "$MODDIR" && mkdir -p $target
     $vrEngine/magisk-setup.sh $vrEngine/eviltheme.prop $MODDIR $magiskTemplate
     find "$vrEngine/META-INF/tk/aureljared/magisk-common" -type f -exec cp -af {} "$MODDIR/" \;
 
@@ -188,9 +188,10 @@ if [ -e "$vrRoot/delete.list" ]; then
             filePath="$(dirname $item)"
             fileRoot="$(echo $filePath | cut -f2 -d/)"
             if [ "$SYSTEMLESS" -eq "1" ] && [ "$fileRoot" == "system" ]; then
-                # Replace file with empty folder
-                # so Magisk can overwrite it by mounting
-                filePath="$target/$(echo $filePath | sed 's~/system~~g')"
+                # Replace file with empty folder so Magisk can overwrite it by auto-mounting
+                filePath="$target/$(echo $filePath | sed 's~/system/~~g')"
+                fileFolder="$(echo $item | grep -o '[^/]*$')"
+                [ ! -z "$(echo $fileFolder | grep '.apk')" ] && filePath="$filePath/$fileFolder"
                 mkdir -p "$filePath"
                 touch "$filePath/.replace"
             else
