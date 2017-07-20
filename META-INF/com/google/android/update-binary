@@ -7,6 +7,7 @@ vrRoot="/data/tmp/eviltheme"                      # Extracted theme files locati
 vrBackupStaging="/data/tmp/eviltheme-backup"      # Backup files location
 vrBackup="/data/eviltheme-backup"                 # Restore ZIP location
 vrEngine="/tmp/eviltheme"                         # Engine files location
+vrDebug=0                                         # Debug EVilTheme
 
 TIMESTAMP=$(date +"%m%d%y-%H%M%S")
 ROOT=
@@ -47,7 +48,7 @@ set_progress 0.30
 
 # Detect runtime
 echo -n '' > $vrBackupStaging/bytecode.list
-test -f /system/system/build.prop && ROOT="/system"
+[ -d "/system/system" ] && ROOT="/system" || ROOT=""
 platformString=`cat $ROOT/system/build.prop | grep "^ro.build.version.release=" | cut -d"=" -f2 | tr -d '\r '`
 platform=`echo "$platformString" | cut -d. -f1`
 if [ "$platform" -ge "5" ]; then
@@ -89,15 +90,14 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
 
     # Calculate size of themed apps
     needAppSizeK=0
-    find $vrRoot/system -name '*.apk' 2>/dev/null | while read f; do
+    find "$vrRoot/system" -name '*.apk' 2>/dev/null | while read f; do
         if [ "$ART" -eq "1" ]; then
-            apkFile=$(echo $f | grep -o '[^/]*$')
-            newRoot="${root}system"
-            apkPath="$(echo $f | sed "s~${vrRoot}~~g" | sed "s~/system~${newRoot}~g" | sed 's/.apk//g')/$apkFile"
+            apkFile="$(echo $f | grep -o '[^/]*$')" # "Browser.apk"
+            apkPath="$(echo $f | sed "s~${vrRoot}~~g" | sed "s~/system~${ROOT}/system~g" | sed 's/.apk//g')/$apkFile" # "(/system)/system/app/Browser/Browser.apk"
         else
-            apkPath=$(echo $f | sed "s~${vrRoot}~~g" | sed "s~/system~${root}system~g")
+            apkPath=$(echo $f | sed "s~${vrRoot}~~g") # "/system/app/Browser.apk"
         fi
-        sizeK=$(du -sk $apkPath | cut -f1)
+        sizeK=$(du -sk "$apkPath" | cut -f1)
         needAppSizeK=$((sizeK + needAppSizeK))
     done
     [ "$needAppSizeK" -gt "0" ] && needAppSizeM=$((needAppSizeK / 1024)) || needAppSizeM=0
@@ -238,14 +238,14 @@ fi
 [ -f "$vrEngine/post-install.sh" ] && $vrEngine/post-install.sh "$vrEngine/recovery-utils.sh" "$2" "$ZIPFILE" "$target" "$vrBackupStaging"
 set_progress 0.90
 
+# Delete empty lists
+[ -z "$(cat $vrBackupStaging/bytecode.list 2>/dev/null)" ] && rm -f $vrBackupStaging/bytecode.list
+[ -z "$(cat $vrBackupStaging/delete.list 2>/dev/null)" ] && rm -f $vrBackupStaging/delete.list
+
 # Create flashable restore zip
-if [ "$(ls -A $vrBackupStaging/)" ]; then
+if [ "$(ls $vrBackupStaging/ | wc -l)" -ne "0" ]; then
     ui_print "Creating restore ZIP"
     restoreZip="$vrBackup/$themeId-restore-$TIMESTAMP.zip"
-
-    # Delete empty lists
-    [ -z "$(cat $vrBackupStaging/bytecode.list)" ] && rm -f $vrBackupStaging/bytecode.list
-    [ -z "$(cat $vrBackupStaging/delete.list)" ] && rm -f $vrBackupStaging/delete.list
 
     # Copy post uninstallation script
     [ -f "$vrEngine/post-uninstall.sh" ] && cp -f "$vrEngine/post-uninstall.sh" "$vrBackupStaging/"
@@ -258,7 +258,7 @@ if [ "$(ls -A $vrBackupStaging/)" ]; then
 fi
 
 # Cleanup
-[ "$themeDebug" -eq "1" ] || cleanup
+[ "$vrDebug" -eq "0" ] && cleanup
 set_progress 1.00
 
 # Goodbye

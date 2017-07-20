@@ -82,8 +82,8 @@ theme() {
 
     for f in *.apk; do
         # Set app paths
-        [ "$ART" -eq "1" ] && appPath="$path/$(friendlyname $f)/$f" || appPath="$path/$f"     #  system/app/(Browser/)Browser.apk
-        [ "$foldername" == "system" ] && origPath="$ROOT/$appPath" || origPath="/$appPath"    # (/system)/system/app/(Browser/)Browser.apk
+        [ "$ART" -eq "1" ] && appPath="$path/$(friendlyname $f)/$f" || appPath="$path/$f"             #  system/app/(Browser/)Browser.apk
+        [ ! -z "$(echo $1 | grep 'system')" ] && origPath="$ROOT/$appPath" || origPath="/$appPath"    # (/system)/system/app/(Browser/)Browser.apk
 
         # Check if app exists in device
         if [ -f "$origPath" ]; then
