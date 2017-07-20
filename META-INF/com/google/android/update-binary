@@ -182,29 +182,30 @@ set_progress 0.40
 # Remove specified files, if any
 if [ -e "$vrRoot/delete.list" ]; then
     ui_print "Removing files"
+
     while IFS='' read item; do
+        [ "$(echo $item | cut -f2 -d/)" == "system" ] && item="$ROOT$item"     # (/system)/system/app/Eleven/Eleven.apk     (/system)/system/lib/libhwui.so
+        itemDir="$(dirname $item)"                                             # (/system)/system/app/Eleven                (/system)/system/lib
+
         if [ -e "$item" ]; then
             ui_print " => $item"
-            filePath="$(dirname $item)"
-            fileRoot="$(echo $filePath | cut -f2 -d/)"
-            if [ "$SYSTEMLESS" -eq "1" ] && [ "$fileRoot" == "system" ]; then
-                # Replace file with empty folder so Magisk can overwrite it by auto-mounting
-                filePath="$target/$(echo $filePath | sed 's~/system/~~g')"
-                fileFolder="$(echo $item | grep -o '[^/]*$')"
-                [ ! -z "$(echo $fileFolder | grep '.apk')" ] && filePath="$filePath/$fileFolder"
-                mkdir -p "$filePath"
-                touch "$filePath/.replace"
-            else
-                # Allow backup deferring
-                deleteParam="$(echo $item | grep -oE '[^ ]+$')"
-                if [ "$deleteParam" == "no-backup" ]; then
-                    [ "$fileRoot" == "system" ] && rm -fr "$ROOT/$item" || rm -fr $item
+
+            if [ "$SYSTEMLESS" -eq "1" ]; then
+                if [ ! -z "$(echo $item | grep -o '[^/]*$' | grep '.apk')" ]; then
+                    # Replace app folder
+                    mktouch "$itemDir" "$MODDIR$itemDir"
                 else
-                    # Move file to backup path
-                    backupPath="$vrBackupStaging/$filePath"
-                    mkdir -p "$backupPath"
-                    mv "$item" "$backupPath/"
+                    # Replace folder or file
+                    mktouch "$item" "$MODDIR$item"
                 fi
+            else
+                if [ "$(echo $item | grep -oE '[^ ]+$')" != "no-backup" ]; then
+                    # Backup file or folder first
+                    backupPath="$vrBackupStaging$itemDir"    # /data/tmp/eviltheme-backup/system/lib
+                    mkdir -p "$backupPath"
+                    cp -af "$item" "$backupPath/"
+                fi
+                rm -fr "$item"
             fi
         fi
     done < "$vrRoot/delete.list"

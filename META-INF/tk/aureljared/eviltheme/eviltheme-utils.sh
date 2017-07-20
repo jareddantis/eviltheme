@@ -150,3 +150,15 @@ theme() {
     done
 }
 
+# Replace using Magisk automount
+# example: mktouch <item-to-replace> <output-Magisk-folder>
+mktouch() {
+    if [ -d "$1" ]; then
+        # Replace folder
+        mkdir -p "$2"
+        touch "$2/.replaced"
+    elif [ -f "$1" ]; then
+        # Replace file
+        echo '' > "$2"
+    fi
+}
