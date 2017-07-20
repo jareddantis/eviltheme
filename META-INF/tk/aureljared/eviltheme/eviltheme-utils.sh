@@ -156,7 +156,7 @@ mktouch() {
     if [ -d "$1" ]; then
         # Replace folder
         mkdir -p "$2"
-        touch "$2/.replaced"
+        touch "$2/.replace"
     elif [ -f "$1" ]; then
         # Replace file
         echo '' > "$2"
