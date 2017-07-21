@@ -1,4 +1,4 @@
-#!/sbin/sh -x
+#!/sbin/sh
 # Eviltheme by Jared Dantis (@aureljared)
 # Licensed under GPL v3
 # https://github.com/aureljared/eviltheme
@@ -39,7 +39,6 @@ ui_print "--------------------------------"
 # Mount filesystems
 ui_print "Mounting filesystems"
 mount -o ro /system
-mount /vendor
 mount /data
 mount /preload
 set_progress 0.10
