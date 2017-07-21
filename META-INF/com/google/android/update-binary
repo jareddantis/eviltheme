@@ -1,4 +1,4 @@
-#!/sbin/sh
+#!/sbin/sh -x
 # Eviltheme by Jared Dantis (@aureljared)
 # Licensed under GPL v3
 # https://github.com/aureljared/eviltheme
@@ -39,6 +39,7 @@ ui_print "--------------------------------"
 # Mount filesystems
 ui_print "Mounting filesystems"
 mount -o ro /system
+mount /vendor
 mount /data
 mount /preload
 set_progress 0.10
@@ -54,10 +55,7 @@ set_progress 0.30
 
 # Detect runtime
 echo -n '' > $vrBackupStaging/bytecode.list
-[ -d "/system/system" ] && ROOT="/system" || ROOT=""
-platformString=`cat $ROOT/system/build.prop | grep "^ro.build.version.release=" | cut -d"=" -f2 | tr -d '\r '`
-platform=`echo "$platformString" | cut -d. -f1`
-if [ "$platform" -ge "5" ]; then
+if [ "$(getProperty ro.build.version.release | cut -d. -f1)" -ge "5" ]; then
     ART=1
     ui_print "Detected ART runtime"
 else
@@ -68,7 +66,6 @@ fi
 # Systemless installation detection
 suimg=$(ls /data/magisk.img || ls /cache/magisk.img) 2>/dev/null
 if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
-    ui_print "Attempting systemless mode"
     MAGISKBIN="$(echo $suimg | sed 's~.img~~g')"
     SYSTEMLESS=1
     sumnt="/$(basename $suimg .img)"
@@ -279,7 +276,7 @@ if [ -d "$vrBackupStaging/system" ] || [ -d "$vrBackupStaging/preload" ]; then
 fi
 
 # Cleanup
-[ "$vrDebug" -eq "0" ] && cleanup
+$vrDebug || cleanup
 set_progress 1.00
 
 # Goodbye

@@ -21,6 +21,9 @@ if [ "$?" -eq "0" ]; then
     done
 fi
 
+# Detect dual /system partitions
+[ -d "/system/system" ] && ROOT="/system" || ROOT=""
+
 # Print to recovery UI
 #   ui_print "Hello!"
 ui_print() { echo "ui_print ${1} " >> $OUTFD; }

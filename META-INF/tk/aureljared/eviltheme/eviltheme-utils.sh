@@ -72,7 +72,7 @@ get_octal_perms() {
 theme() {
     path="$1/$2" # system/app
     [ "$cpContextSupported" -eq "1" ] && cpFlags="-afc" || cpFlags="-af"
-    cd "$vrRoot/$path"
+    [ "$2" == "framework" -o "$2" == "samsung-framework-res" ] && isFramework=1 || isFramework=0
 
     # Determine output parent folder of themed app
     rootFolder="$(echo $1 | cut -f1 -d/)"
@@ -96,35 +96,50 @@ theme() {
     mkdir -p "$vrRoot/apply/$path"
 
     for f in *.apk; do
+        cd "$vrRoot/$path/$f"
+
         # Set app paths
-        [ "$ART" -eq "1" ] && appPath="$path/$(friendlyname $f)/$f" || appPath="$path/$f"     #  system/app/(Browser/)Browser.apk
-        [ "$rootFolder" == "system" ] && origPath="$ROOT/$appPath" || origPath="/$appPath"    # (/system)/system/app/(Browser/)Browser.apk
+        [ "$ART" -eq "1" ] && appSubDir="$(friendlyname $f)" || appSubDir=""
+        [ "$isFramework" -eq "1" ] && appDir="$path" || appDir="$path/$appSubDir"
+        appPath="$appDir/$f"
 
         # Check if app exists in device
+        [ "$rootFolder" == "system" ] && origPath="$ROOT/$appPath" || origPath="/$appPath"
         if [ -f "$origPath" ]; then
             ui_print " => $origPath"
-            vrApp="$vrRoot/apply/$appPath.zip"                                                # /data/tmp/eviltheme/apply/system/app/(Browser/)Browser.apk.zip
+
+            # Path to copied app. This is what we will theme.
+            # example: /data/tmp/eviltheme/apply/system/app/(Browser/)Browser.apk.zip
+            vrApp="$vrRoot/apply/$appPath.zip"
+
+            # Path to which we will copy the themed app
+            # $appSubDir is empty on KitKat and below
+            [ "$isFramework" -eq "1" ] && vrOut="$vrTarget/$f" || vrOut="$vrTarget/$appSubDir/$f"
 
             # Create app subfolders (ex. Browser/Browser.apk)
-            if [ "$ART" -eq "1" ]; then
-                mkdir -p "$vrRoot/apply/$path/$(friendlyname $f)"
-                [ "$SYSTEMLESS" -eq "1" ] && mkdir -p "$vrTarget/$(friendlyname $f)" || mkdir -p "$vrBackupStaging/$path/$(friendlyname $f)"
+            mkdir -p "$vrRoot/apply/$appDir"
+            if [ "$SYSTEMLESS" -eq "1" ] && [ "$rootFolder" == "system" ]; then
+                # Create app subfolder in Magisk module folder
+                # Framework apps do not have their own subfolders
+                [ "$isFramework" -ne "1" ] && mkdir -p "$vrTarget/$appSubDir"
+            else
+                # Create app subfolder in backup folder
+                mkdir -p "$vrBackupStaging/$appDir"
             fi
 
             # Get original SELinux context
-            if [ "$cpContextSupported" -eq "0" ] && [ "$lsContextSupported" -eq "1" ]; then
+            if [ "$lsContextSupported" -eq "1" ]; then
                 appContext="$(ls -Z $origPath | tr -s ' ' ' ' | cut -f2 -d' ')"
             else
                 appContext='u:object_r:system_file:s0'
             fi
-            [ "$vrDebug" -eq "1" ] && echo "$vrOut $appUid $appGid $appPerms '$appContext'" >> $vrBackupStaging/contexts.list
+            $vrDebug && echo "$vrOut $appUid $appGid $appPerms '$appContext'" >> $vrBackupStaging/contexts.list
 
             # Copy APK and backup if not systemless
             cp "$cpFlags" "$origPath" "$vrApp"
             [ "$SYSTEMLESS" -eq "0" ] && cp "$cpFlags" "$origPath" "$vrBackupStaging/$origPath"
 
             # Delete files in APK, if any
-            cd "$f"
             if [ -e "./delete.list" ]; then
                 while IFS='' read item; do
                     $vrEngine/zip -d "$vrApp" "$item"
@@ -140,10 +155,8 @@ theme() {
             [ "$2" == "samsung-framework-res" ] && checkdex "framework@$2" "$f" || checkdex "$2" "$f"
 
             # Finish up
-            [ "$ART" -eq "1" ] && vrOut="$vrTarget/$(friendlyname $f)/$f" || vrOut="$vrTarget/$f"
-            cp "$cpFlags" "$vrRoot/apply/$appPath" "$vrOut"
+            cp "$cpFlags" "$vrApp" "$vrOut"
             [ "$cpContextSupported" -eq "0" ] && chcon "$appContext" "$vrOut"
-            cd "$vrRoot/$path"
         else
             ui_print " !! $origPath not found"
         fi
@@ -161,4 +174,10 @@ mktouch() {
         # Replace file
         echo '' > "$2"
     fi
+}
+
+# Getprop
+getProperty() {
+    propVal=$(cat $ROOT/system/build.prop | grep "^${1}=" | cut -d"=" -f2 | tr -d '\r ')
+    echo $propVal
 }
