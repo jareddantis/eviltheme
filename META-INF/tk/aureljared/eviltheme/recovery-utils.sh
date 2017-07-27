@@ -22,7 +22,7 @@ if [ "$?" -eq "0" ]; then
 fi
 
 # Detect dual /system partitions
-[ -d "/system/system" ] && ROOT="/system" || ROOT=""
+[ -d "/system/system" ] && ROOT="/system" || ROOT=
 
 # Print to recovery UI
 #   ui_print "Hello!"

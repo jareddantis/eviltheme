@@ -2,16 +2,14 @@
 # Eviltheme by Jared Dantis (@aureljared)
 # Licensed under GPL v3
 # https://github.com/aureljared/eviltheme
-vrVersion="3.0.0-beta4"
+vrVersion="3.0.0-beta5"
 vrRoot="/data/tmp/eviltheme"                      # Extracted theme files location
 vrBackupStaging="/data/tmp/eviltheme-backup"      # Backup files location
 vrBackup="/data/eviltheme-backup"                 # Restore ZIP location
 vrEngine="/tmp/eviltheme"                         # Engine files location
-vrDebug=0                                         # Debug EVilTheme
+vrDebug=false                                     # Debug EVilTheme
 
 TIMESTAMP=$(date +"%m%d%y-%H%M%S")
-ROOT=
-ART=0
 SYSTEMLESS=0
 ZIPFILE="$3"
 
@@ -41,6 +39,7 @@ ui_print "Mounting filesystems"
 mount -o ro /system
 mount /data
 mount /preload
+mount /cache
 set_progress 0.10
 
 # Extract theme files
@@ -51,16 +50,6 @@ mv $vrEngine/restore_template.zip $vrRoot/
 mkdir -p "$vrRoot/apply"
 mkdir -p "$vrBackupStaging" && cp -f $vrEngine/eviltheme.prop $vrBackupStaging/
 set_progress 0.30
-
-# Detect runtime
-echo -n '' > $vrBackupStaging/bytecode.list
-if [ "$(getProperty ro.build.version.release | cut -d. -f1)" -ge "5" ]; then
-    ART=1
-    ui_print "Detected ART runtime"
-else
-    ui_print "Detected Dalvik runtime"
-    mount /cache
-fi
 
 # Systemless installation detection
 suimg=$(ls /data/magisk.img || ls /cache/magisk.img) 2>/dev/null
@@ -93,7 +82,7 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
     # Calculate size of themed apps
     needAppSizeK=0
     find "$vrRoot/system" -name '*.apk' 2>/dev/null | while read f; do
-        if [ "$ART" -eq "1" ]; then
+        if $ART; then
             apkFile="$(echo $f | grep -o '[^/]*$')" # "Browser.apk"
             apkPath="$(echo $f | sed "s~${vrRoot}~~g" | sed "s~/system~${ROOT}/system~g" | sed 's/.apk//g')/$apkFile" # "(/system)/system/app/Browser/Browser.apk"
         else
@@ -242,6 +231,7 @@ set_progress 0.70
 # Start theming
 if [ -d "$vrRoot/system" -o -d "$vrRoot/preload" ]; then
     ui_print "Applying theme"
+    echo -n '' > $vrBackupStaging/bytecode.list
     [ -d "$vrRoot/system/app" ] && theme "system" "app"
     [ -d "$vrRoot/system/priv-app" ] && theme "system" "priv-app"
     [ -d "$vrRoot/preload/symlink/system/app" ] && theme "preload/symlink/system" "app"

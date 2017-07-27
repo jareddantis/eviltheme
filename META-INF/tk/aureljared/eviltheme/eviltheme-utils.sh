@@ -2,14 +2,33 @@
 # Licensed under GPL v3
 # https://github.com/aureljared/eviltheme
 
+# Detect architecture and Android version
+ART=false
+ARCH="arm"
+IS64BIT=false
+API="$(getProperty ro.build.version.sdk)"
+ABI="$(getProperty ro.product.cpu.abi | cut -c-3)"
+ABI2="$(getProperty ro.product.cpu.abi2 | cut -c-3)"
+ABILONG="$(getProperty ro.product.cpu.abi)"
+[ "$API" -ge "19" ] && ART=true
+if [ "$ABILONG" == "x86_64" ]; then
+    ARCH="x64"
+    IS64BIT=true
+elif [ "$ABILONG" == "arm64-v8a" ]; then
+    ARCH="arm64"
+    IS64BIT=true
+elif [ "$ABI" == "x86" ] || [ "$ABI2" == "x86" ]; then
+    ARCH="x86"
+fi
+
 cleanup() {
     ui_print "Cleaning up and unmounting filesystems"
     rm -rf $vrRoot $vrBackupStaging
     [ "$SYSTEMLESS" -eq "1" ] && umount $sumnt
-    [ "$ART" -eq "0" ] && umount /cache
     umount /system
     umount /data
     umount /preload
+    umount /cache
 }
 
 # These were too long to look clean in update-binary
@@ -39,14 +58,18 @@ checkdex_art() {
     if [ -e ./classes.dex ] || [ -e ./classes.art ]; then
         echo "system@$1@$appname@$2" >> $vrBackupStaging/bytecode.list
         rm -f "/data/dalvik-cache/arm/system@$1@$appname@$2@classes.dex"
-        rm -f "/data/dalvik-cache/arm64/system@$1@$appname@$2@classes.dex"
+        rm -f "/data/dalvik-cache/arm/system@$1@$appname@$2@classes.vdex"
         rm -f "/data/dalvik-cache/arm/system@$1@$appname@$2@classes.art"
-        rm -f "/data/dalvik-cache/arm64/system@$1@$appname@$2@classes.art"
+        if $IS64BIT; then
+            rm -f "/data/dalvik-cache/arm64/system@$1@$appname@$2@classes.dex"
+            rm -f "/data/dalvik-cache/arm64/system@$1@$appname@$2@classes.vdex"
+            rm -f "/data/dalvik-cache/arm64/system@$1@$appname@$2@classes.art"
+        fi
     fi
 }
 checkdex() {
     # checkdex <subfolder in /system> <apk filename>
-    [ "$ART" -eq "1" ] && checkdex_art "$@" || checkdex_dalvik "$@"
+    $ART && checkdex_art "$@" || checkdex_dalvik "$@"
 }
 
 convert_to_octal() {
@@ -99,7 +122,7 @@ theme() {
         cd "$vrRoot/$path/$f"
 
         # Set app paths
-        [ "$ART" -eq "1" ] && appSubDir="$(friendlyname $f)" || appSubDir=""
+        $ART && appSubDir="$(friendlyname $f)" || appSubDir=""
         [ "$isFramework" -eq "1" ] && appDir="$path" || appDir="$path/$appSubDir"
         appPath="$appDir/$f"
 
