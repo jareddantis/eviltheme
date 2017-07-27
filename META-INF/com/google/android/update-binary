@@ -120,8 +120,8 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
         dataFreeBlocks=$(df -kP /data | tr -s ' ' $'\t' | cut -f4 | grep -vE "^Available")
         dataFreeM=$((dataFreeBlocks / 1024))
         if [ "$dataFreeM" -gt "$newSizeM" ]; then
-            ui_print " * Resizing to $needSizeM MB"
-            resize2fs $suimg ${needSizeM}M
+            ui_print " * Resizing to $newSizeM MB"
+            resize2fs $suimg ${newSizeM}M
 
             # Verify new size
             newBlocks="$(e2fsck -n $suimg 2>/dev/null | grep $suimg | cut -d, -f3 | cut -d\  -f2 | cut -d/ -f2)"
