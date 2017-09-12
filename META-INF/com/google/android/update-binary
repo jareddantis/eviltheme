@@ -58,18 +58,6 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
     SYSTEMLESS=1
     sumnt="/$(basename $suimg .img)"
 
-    # Check for Magisk 13.1+
-    [ -d "$MAGISKBIN" -a -f "$MAGISKBIN/magisk" -a -f "$MAGISKBIN/util_functions.sh" ] && oldMagisk=0 || oldMagisk=1
-    if [ "$oldMagisk" -eq "1" ]; then
-        magiskTemplate=3
-        ui_print "Magisk version < 13.1 detected"
-        ui_print " * If any problems occur, try updating"
-        ui_print "   Magisk and flash this theme again."
-    else
-        magiskTemplate=4
-        ui_print "Magisk version >= 13.1 detected"
-    fi
-
     # Calculate free space
     curBlocks=$(e2fsck -n $suimg 2>/dev/null | grep $suimg | cut -d, -f3 | cut -d\  -f2)
     curUsed=$(echo "$curBlocks" | cut -d/ -f1)
@@ -151,7 +139,7 @@ if [ ! -e "/sdcard/.eviltheme-force-system" ] && [ "$suimg" ]; then
 
     # Copy Magisk module files
     rm -fr "$MODDIR" && mkdir -p $target
-    $vrEngine/magisk-setup.sh $vrEngine/eviltheme.prop $MODDIR $magiskTemplate
+    $vrEngine/magisk-setup.sh $vrEngine/eviltheme.prop $MODDIR
     find "$vrEngine/META-INF/tk/aureljared/magisk-common" -type f -exec cp -af {} "$MODDIR/" \;
 
     # Store theme size in eviltheme.prop for later reference by restore ZIP
